@@ -1,0 +1,2208 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پلتفرم آزمون آنلاین پرستاری</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Vazirmatn', sans-serif; 
+            background-color: #f3f4f6; /* A neutral fallback */
+            background-image:
+                radial-gradient(at 0% 0%, hsla(253, 100%, 95%, 1) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, hsla(280, 100%, 90%, 1) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, hsla(240, 100%, 90%, 1) 0px, transparent 50%),
+                radial-gradient(at 0% 100%, hsla(300, 100%, 95%, 1) 0px, transparent 50%);
+            background-attachment: fixed; /* Keep the gradient fixed during scroll */
+        }
+        .hidden { display: none; }
+        .card { 
+            background-color: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 1.5rem; 
+            box-shadow: 0 20px 30px -10px rgba(109, 40, 217, 0.2); 
+            padding: 1.5rem; /* Base padding for mobile */
+            transition: all 0.3s ease-in-out; 
+        }
+        @media (min-width: 640px) { /* sm breakpoint */
+            .card {
+                padding: 2.5rem; /* Larger padding for larger screens */
+            }
+        }
+        .btn { 
+            padding: 0.75rem 1.5rem; 
+            border-radius: 0.75rem; 
+            font-weight: 700; 
+            color: white; 
+            transition: transform 0.2s ease-out, box-shadow 0.2s ease-out, background-position 0.4s ease;
+            cursor: pointer; 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center;
+            border: none;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            overflow: hidden;
+            position: relative;
+        }
+        .btn:disabled { 
+            background-image: none;
+            background-color: #9ca3af; 
+            cursor: not-allowed; 
+            box-shadow: none;
+        }
+        .btn-primary { 
+            background-image: linear-gradient(to right, #8b5cf6, #7c3aed, #a78bfa, #8b5cf6);
+            background-size: 200% auto;
+            background-position: 0% 0%;
+        }
+        .btn-primary:hover:not(:disabled) { 
+            background-position: 100% 0%;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(124, 58, 237, 0.4), 0 4px 6px -2px rgba(124, 58, 237, 0.2);
+        }
+        .btn:active:not(:disabled) {
+            transform: translateY(-1px) scale(0.98);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .input-field { 
+            width: 100%; 
+            padding: 0.85rem; 
+            border-radius: 0.75rem; 
+            border: 1px solid #d1d5db;
+            background-color: rgba(255, 255, 255, 0.5);
+            transition: all 0.2s ease;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: #a78bfa;
+            box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.4);
+        }
+        .option { 
+            border: 2px solid #e5e7eb; 
+            padding: 0.75rem; 
+            border-radius: 0.75rem; 
+            cursor: pointer; 
+            transition: all 0.2s ease-in-out;
+            background-color: rgba(255, 255, 255, 0.4);
+        }
+        .option:hover { 
+            border-color: #8b5cf6; 
+            background-color: #f5f3ff; 
+            transform: translateY(-2px) scale(1.01);
+        }
+        .option.selected { 
+            background-color: #ede9fe; 
+            border-color: #8b5cf6; 
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.3); 
+        }
+        .tab-btn { 
+            padding: 0.75rem 1rem; 
+            border-radius: 0.75rem; 
+            cursor: pointer; 
+            font-weight: 600; 
+            border: 2px solid transparent; 
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        .tab-btn.active { 
+            background-color: #8b5cf6; 
+            color: white; 
+            box-shadow: 0 4px 10px -2px rgba(139, 92, 246, 0.4); 
+        }
+        .tab-btn:not(.active):hover {
+            background-color: #f5f3ff;
+            color: #7c3aed;
+        }
+
+        /* --- NEW STYLES FOR CATEGORY TABS --- */
+        /* Override .tab-btn padding and border-radius to fit the line-tab style */
+        .category-tab-btn {
+            padding: 0.6rem 0.25rem; /* Smaller padding */
+            font-size: 0.9rem; /* Smaller font */
+            border-radius: 0; /* Remove rounded corners for a tab look */
+            border-width: 0 0 3px 0; /* Only bottom border */
+            border-bottom-color: transparent; /* Default transparent border */
+            background-color: transparent !important; /* Ensure no bg color */
+            color: #6b7280; /* text-gray-500 */
+            box-shadow: none !important; /* Remove shadow */
+        }
+        
+        /* Style for the active category tab */
+        .category-tab-btn.active {
+            background-color: transparent; /* Override .tab-btn.active */
+            color: #8b5cf6; /* Keep the brand color for text */
+            border-bottom-color: #8b5cf6; /* Active line */
+            box-shadow: none; /* Override .tab-btn.active shadow */
+        }
+
+        /* Style for hover (non-active) */
+        .category-tab-btn:not(.active):hover {
+            background-color: transparent; /* Override .tab-btn hover */
+            color: #7c3aed; /* Darker purple on hover */
+            border-bottom-color: #c4b5fd; /* Lighter purple line on hover */
+        }
+        /* --- END OF NEW STYLES --- */
+
+        /* --- STYLES FOR TAB SCROLL INDICATOR --- */
+        .tab-scroll-wrapper {
+            position: relative;
+        }
+
+        /* Hide scrollbar - MOVED from .tab-scroll-wrapper */
+        #inner-tab-scroller {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        #inner-tab-scroller::-webkit-scrollbar {
+            display: none; /* Safari and Chrome */
+        }
+        
+        /* Gradient fade-out effect for RTL (on the left) */
+        .tab-scroll-wrapper::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: -2px; /* Cover the border-b */
+            width: 50px; /* Width of the fade */
+            pointer-events: none; /* Allow clicks through */
+            /* Fades from transparent to a light purple (violet-100) */
+            background: linear-gradient(to left, rgba(237, 233, 254, 0) 0%, rgba(237, 233, 254, 1) 100%);
+            z-index: 1; /* Sit above tabs but below arrow */
+        }
+        
+        /* Arrow icon for RTL (on the left) */
+        .tab-scroll-wrapper::before {
+            /* Inline SVG arrow, color-encoded for data URI */
+            content: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="%238b5cf6" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>');
+            position: absolute;
+            left: 8px; 
+            top: 50%;
+            /* Adjust vertical alignment based on new tab height */
+            transform: translateY(-70%); 
+            pointer-events: none;
+            z-index: 2; /* On top of the fade */
+            opacity: 0.7;
+            /* animation: pulse-arrow 1.8s infinite ease-in-out; -- REMOVED */
+        }
+        
+        @keyframes pulse-arrow {
+            /* -- ANIMATION NO LONGER USED, BUT KEPT TO AVOID BREAKING OTHER STYLES IF REFERENCED -- */
+            /* (This block can be safely removed, but leaving it has no harm) */
+            0%, 100% {
+                opacity: 0.2;
+                transform: translateY(-70%) translateX(2px);
+            }
+            50% {
+                opacity: 0.9;
+                transform: translateY(-70%) translateX(0);
+            }
+        }
+        /* --- END OF TAB SCROLL INDICATOR STYLES --- */
+
+
+        .loader { width: 1.2rem; height: 1.2rem; border: 2px solid #FFF; border-bottom-color: transparent; border-radius: 50%; display: inline-block; box-sizing: border-box; animation: rotation 1s linear infinite; margin-left: 0.5rem; }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #ai-consultation-content { font-size: 1.1rem; line-height: 1.9; }
+        #ai-consultation-content ul { list-style-type: disc; padding-right: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.5rem; }
+        #ai-consultation-content li { margin-bottom: 0.5rem; }
+        .admin-tab-btn.active { 
+            background-color: #581c87; /* A darker purple for active state in dark sidebar */
+            color: white;
+        }
+        .payment-subtab-btn.active {
+            border-color: #8b5cf6;
+            color: #8b5cf6;
+        }
+        .loading-dots span {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background-color: #8b5cf6;
+            border-radius: 50%;
+            animation: pulse 1.4s infinite ease-in-out both;
+        }
+        .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes pulse {
+            0%, 80%, 100% { transform: scale(0); } 
+            40% { transform: scale(1.0); }
+        }
+        /* New Animation Styles */
+        .animate-slide-up {
+            animation: slideUp 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+            opacity: 0;
+        }
+        .animate-stagger-item {
+            opacity: 0;
+            animation: slideUp 0.5s ease-out forwards;
+        }
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        #progress-bar {
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        /* Custom modal styles */
+        .custom-modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            opacity: 0;
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        .custom-modal-content {
+            background-color: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.2);
+            padding: 2rem;
+            max-width: 90%;
+            width: 500px;
+            opacity: 0;
+            transform: scale(0.95) translateY(10px);
+            animation: modalPopIn 0.4s 0.1s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes modalPopIn {
+            from { opacity: 0; transform: scale(0.95) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        /* Toast Notification Styles */
+        .toast-notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            color: white;
+            z-index: 100;
+            opacity: 0;
+            animation: slideDownIn 0.5s cubic-bezier(0.165, 0.84, 0.44, 1) forwards, slideUpOut 0.5s 2.5s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+        }
+        .toast-success { background-color: #10b981; }
+        .toast-error { background-color: #ef4444; }
+        .toast-info { background-color: #3b82f6; }
+
+        @keyframes slideDownIn {
+            from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        @keyframes slideUpOut {
+            from { opacity: 1; transform: translateX(-50%) translateY(0); }
+            to { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+        }
+
+        /* --- STYLES FOR TAB PROGRESS DOTS --- */
+        .progress-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #d1d5db; /* gray-300 */
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .progress-dot:hover {
+            background-color: #c4b5fd; /* purple-300 */
+        }
+        .progress-dot.active {
+            background-color: #8b5cf6; /* purple-600 */
+            transform: scale(1.2);
+            box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.4);
+        }
+        
+        /* Responsive tables for Admin Panel */
+        @media (max-width: 767px) { /* Below md breakpoint */
+            /* Hide table headers, but not cells */
+            .responsive-table thead {
+                display: none;
+            }
+            .responsive-table tbody, .responsive-table tr, .responsive-table td {
+                display: block;
+            }
+            .responsive-table tr {
+                border: 1px solid #e5e7eb;
+                border-radius: 0.75rem; /* rounded-lg */
+                margin-bottom: 1rem; /* mb-4 */
+                padding: 1rem; /* p-4 */
+                background-color: #ffffff; /* bg-white */
+                box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); /* shadow */
+            }
+            .responsive-table td {
+                padding: 0.5rem 0.25rem; /* py-2 px-1 */
+                border: none;
+                border-bottom: 1px solid #f3f4f6; /* border-gray-100 */
+                position: relative;
+                /* padding-right: 50%; */ /* <-- حذف شد */
+                text-align: left; /* <-- به چپ چین تغییر کرد */
+                white-space: normal;
+                display: flex; /* Use flex for better alignment */
+                justify-content: space-between; /* Align label and value */
+                align-items: center; /* Center items vertically */
+            }
+            .responsive-table td:last-child {
+                border-bottom: none;
+            }
+            /* Add labels */
+            .responsive-table td::before {
+                content: attr(data-label);
+                /* position: absolute; */ /* <-- حذف شد */
+                /* right: 0.25rem; */ /* <-- حذف شد */
+                /* width: 45%; */ /* <-- حذف شد */
+                /* padding-left: 0.5rem; */ /* <-- حذف شد */
+                font-weight: 600; /* font-semibold */
+                color: #374151; /* text-gray-700 */
+                text-align: right;
+                margin-left: 0.5rem; /* ml-2 */
+            }
+            
+            /* Specific overrides for buttons in cells */
+            .responsive-table td.responsive-action-cell {
+                padding: 0.5rem 0; /* Reset padding */
+                text-align: right; /* Reset alignment */
+                display: block; /* Override flex */
+            }
+            .responsive-table td.responsive-action-cell::before {
+                content: none; /* No label for action cells */
+            }
+            .responsive-table td.responsive-action-cell button {
+                width: 100%; /* Make buttons full-width */
+                margin-top: 0.5rem; /* mt-2 */
+            }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen py-4 sm:py-8">
+
+    <div id="main-container" class="w-full max-w-5xl mx-auto p-2 sm:p-4">
+        <!-- All views will be dynamically rendered here -->
+    </div>
+    
+    <!-- Modal Container -->
+    <div id="modal-container"></div>
+    
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, onSnapshot, query, doc, setDoc, where, getDoc, Timestamp, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-analytics.js";
+
+        // --- CONFIGURATION ---
+        const ADMIN_EMAIL = "rbidokhti@gmail.com";
+        
+        // --- PAYMENT INFO ---
+        const PAYMENT_INFO = {
+            rawCardNumber: "6063731269518586", // For copying
+            displayedCardNumber: "۶۰۶۳-۷۳۱۲-۶۹۵۱-۸۵۸۶", // For display
+            accountHolder: "رضا بیدختی (بانک مهر)"
+        };
+        
+        // --- FIREBASE SETUP ---
+        const firebaseConfig = {
+          apiKey: "AIzaSyDM8TDS86QLxRypLLB1Mb0CIgS1CUVines",
+          authDomain: "psynurse-70d4c.firebaseapp.com",
+          projectId: "psynurse-70d4c",
+          storageBucket: "psynurse-70d4c.firebasestorage.app",
+          messagingSenderId: "399051000395",
+          appId: "1:399051000395:web:10370b3be2eaca39385bce",
+          measurementId: "G-WV9K9QZN9M"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const analytics = getAnalytics(app);
+
+        // --- STATE & GLOBAL VARS ---
+        let currentUser = null;
+        let userProfile = null;
+        let userPayments = [];
+        let quizSettings = {};
+        let discounts = [];
+        let allQuizzes = {}; // Will be populated from Firestore
+        let allPackages = {}; // Will be populated from Firestore
+        let unsubscribeAdminListener = null;
+        let unsubscribeUserPaymentsListener = null;
+        let unsubscribeQuizSettingsListener = null;
+        let unsubscribeDiscountsListener = null;
+        let unsubscribeQuizzesListener = null;
+        let unsubscribePackagesListener = null; // New listener
+        let quizState = {};
+        let resultPieChartInstance = null;
+        let progressChartInstance = null;
+        const mainContainer = document.getElementById('main-container');
+
+        // --- UTILITY & AI FUNCTIONS ---
+        
+        function sanitizeObjectKeys(obj) {
+            // FIX: Check if the object is a Firestore Timestamp and return it as is to preserve its methods.
+            if (obj && typeof obj.toMillis === 'function' && obj.hasOwnProperty('seconds') && obj.hasOwnProperty('nanoseconds')) {
+                return obj;
+            }
+            if (obj === null || typeof obj !== 'object') return obj;
+            if (Array.isArray(obj)) return obj.map(item => sanitizeObjectKeys(item));
+            const newObj = {};
+            for (const key in obj) {
+                if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                    const trimmedKey = key.trim();
+                    newObj[trimmedKey] = sanitizeObjectKeys(obj[key]);
+                }
+            }
+            return newObj;
+        }
+        
+        const toggleButtonLoading = (button, isLoading, originalText) => {
+            if(!button) return;
+            if (isLoading) {
+                button.disabled = true;
+                button.innerHTML = `<span class="loader"></span> ${originalText}...`;
+            } else {
+                button.disabled = false;
+                button.innerHTML = originalText;
+            }
+        };
+
+        // Custom Modal Function
+        function showModal(title, message, confirmText, cancelText, onConfirm) {
+            const modalContainer = document.getElementById('modal-container');
+            const modalId = `modal-${Date.now()}`;
+            
+            const modalHtml = `
+                <div id="${modalId}" class="custom-modal-backdrop">
+                    <div class="custom-modal-content">
+                        <h3 class="text-2xl font-bold text-gray-800 mb-4">${title}</h3>
+                        <p class="text-gray-600 mb-8">${message}</p>
+                        <div class="flex justify-end gap-3">
+                            ${cancelText ? `<button class="btn bg-gray-500 hover:bg-gray-600 modal-cancel-btn">${cancelText}</button>` : ''}
+                            <button class="btn btn-primary modal-confirm-btn">${confirmText}</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            modalContainer.innerHTML = modalHtml;
+
+            const modalElement = document.getElementById(modalId);
+            
+            const closeModal = () => {
+                modalElement.style.animation = 'fadeOut 0.3s ease-out forwards';
+                modalElement.querySelector('.custom-modal-content').style.animation = 'modalPopOut 0.3s ease-out forwards';
+                setTimeout(() => {
+                    modalContainer.innerHTML = '';
+                }, 300);
+            };
+
+            modalElement.querySelector('.modal-confirm-btn').addEventListener('click', () => {
+                onConfirm();
+                closeModal();
+            });
+            
+            if (cancelText) {
+                modalElement.querySelector('.modal-cancel-btn').addEventListener('click', closeModal);
+            }
+
+            // CSS for fadeOut and modalPopOut
+            if (!document.getElementById('modal-animation-styles')) {
+                const style = document.createElement('style');
+                style.id = 'modal-animation-styles';
+                style.innerHTML = `
+                    @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+                    @keyframes modalPopOut {
+                        from { opacity: 1; transform: scale(1) translateY(0); }
+                        to { opacity: 0; transform: scale(0.95) translateY(10px); }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+        }
+
+        // Custom Toast Notification Function
+        function showToast(message, type = 'info') {
+            const toastContainer = document.getElementById('toast-container');
+            const toastId = `toast-${Date.now()}`;
+            let toastClass = 'toast-info';
+            if (type === 'success') toastClass = 'toast-success';
+            if (type === 'error') toastClass = 'toast-error';
+            
+            const toastHtml = `<div id="${toastId}" class="toast-notification ${toastClass}">${message}</div>`;
+            
+            toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+            
+            const toastElement = document.getElementById(toastId);
+            setTimeout(() => {
+                toastElement.remove();
+            }, 3000); // Remove after 3 seconds (0.5s in + 2.5s visible + 0.5s out)
+        }
+        
+        function copyToClipboard(text) {
+            const tempTextarea = document.createElement('textarea');
+            tempTextarea.value = text;
+            tempTextarea.style.position = 'fixed'; // Prevent scrolling to bottom
+            tempTextarea.style.opacity = '0';
+            document.body.appendChild(tempTextarea);
+            tempTextarea.focus();
+            tempTextarea.select();
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showToast('شماره کارت کپی شد!', 'success');
+                } else {
+                    showToast('خطا در کپی. لطفاً دستی کپی کنید.', 'error');
+                }
+            } catch (err) {
+                showToast('خطا در کپی. لطفاً دستی کپی کنید.', 'error');
+                console.error('Failed to copy: ', err);
+            }
+            document.body.removeChild(tempTextarea);
+        }
+        
+        function convertPersianToLatin(str) {
+            if (!str) return str;
+            const persianNumbers = [/۰/g, /۱/g, /۲/g, /۳/g, /۴/g, /۵/g, /۶/g, /۷/g, /۸/g, /۹/g];
+            const latinNumbers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+            let newStr = String(str);
+            for (let i = 0; i < 10; i++) {
+                newStr = newStr.replace(persianNumbers[i], latinNumbers[i]);
+            }
+            return newStr;
+        }
+        
+        async function getAIAnalysis(resultData) {
+            const quizData = allQuizzes[resultData.quizId];
+            const incorrectQuestions = resultData.answers.map((answer, index) => {
+                if (answer !== null && answer !== quizData.questions[index].correctAnswer) return `سوال: "${quizData.questions[index].question}"`;
+                return null;
+            }).filter(q => q !== null).join('\n');
+
+            const systemPrompt = `
+                شما یک مشاور تحصیلی برجسته و متخصص در زمینه آزمون‌های پرستاری روان هستید. تحلیل شما باید کاملاً حرفه‌ای، حمایتگرانه، دقیق و شخصی‌سازی شده باشد. تحلیل خود را به زبان فارسی ارائه دهید و مستقیماً دانشجو را خطاب قرار دهید. از به کار بردن ایموجی خودداری کن.
+
+                **قوانین بسیار مهم که باید رعایت کنی:**
+                ۱. **ارجاع به کتاب:** اگر نیاز به معرفی منبع برای مطالعه بیشتر بود، **فقط و فقط** از کتاب‌های زیر استفاده کن و برای هر موضوع به بخش مربوطه ارجاع بده:
+                   - **"اصول روان پرستاری و بهداشت روان تاونسند"** (بر اساس فهرست زیر):
+                        فصل ۱: مقدمه ­ای بر مفاهیم بهداشت روان و روانپزشکی
+                            بخش ۱: سلامت روان و بیماری روان
+                            بخش ۲: مفاهیم بیولوژیکی
+                            بخش ۳: مسائل اخلاقی و حقوقی
+                            بخش ۴: فارماکولوژی روان
+                        فصل ۲: مداخلات روان­پرستاری و بهداشت روان
+                            بخش ۵: توسعه ارتباط و ارتباط درمانی
+                            بخش ۶: فرآیند پرستاری در روان­پرستاری و بهداشت روان
+                            بخش ۷: مداخلات روانی-اجتماعی و مراقبت معنوی
+                            بخش ۸: مداخله در گروه­ها
+                            بخش ۹: مداخله در بحران
+                            بخش ۱۰: مدل بهبودی
+                            بخش ۱۱: پیشگیری از خودکشی
+                        فصل ۳: مراقبت از بیماران مبتلا به اختلالات روانپزشکی
+                            بخش ۱۲: مراقبت از بیماران مبتلا به بیماری روان و اختلالات مصرف مواد در محیط­های عملکردی عمومی
+                            بخش ۱۳: اختلالات عصبی-شناختی
+                            بخش ۱۴: اختلالات مصرف مواد و اعتیاد
+                            بخش ۱۵: طیف اسکیزوفرنی و سایر اختلالات سایکوتیک
+                            بخش ۱۶: اختلالات افسردگی
+                            بخش ۱۷: دوقطبی و اختلالات مرتبط
+                            بخش ۱۸: اضطراب، وسواسی-جبری و اختلالات مرتبط
+                            بخش ۱۹: اختلالات مرتبط با تروما و عامل استرس­زا
+                            بخش ۲۰: اختلالات نشانه جسمانی و اختلالات تجزیه­ای
+                            بخش ۲۱: اختلالات خوردن
+                            بخش ۲۲: اختلالات شخصیت
+                        فصل ۴: روان­پرستاری و بهداشت روان در جمعیت­های خاص
+                            بخش ۲۳: کودکان و نوجوانان
+                            بخش ۲۴: شخص سالخورده
+                            بخش ۲۵: نجات­یافتگان سوء استفاده یا غفلت
+                            بخش ۲۶: پرستاری بهداشت روان جامعه
+                            بخش ۲۷: شخص داغدار
+                            بخش ۲۸: خانواده‌های نظامی
+                        فصل ۵: (متفرقه)
+                            بخش ۲۹: مفاهیم تکامل شخصیت
+                            بخش ۳۰: درمان­های مکمل و تلفیقی
+                            بخش ۳۱: مفاهیم فرهنگی مرتبط با روان­پرستاری و بهداشت روان
+                            بخش ۳۲: مسائل مربوط به تمایلات جنسی انسانی و دیسفوریای جنسیتی
+                   - **"کتاب تست اوج روان"**
+                ۲. **ارجاع برای مشاوره:** اگر نیاز به ارجاع برای برنامه‌ریزی درسی و مشاوره آزمون ارشد بود، دانشجو را به **"آکادمی مسیر (سرکار خانم کلیج)"** ارجاع بده.
+                ۳. **ممنوعیت مقیاس‌ها:** به هیچ عنوان به مقیاس‌های روانشناسی (مانند مقیاس اضطراب بک و...) ارجاع نده.
+                ۴. **تشویق به آزمون:** در انتهای تحلیل، دانشجو را تشویق کن تا با توجه به شرایط و نقاط ضعف خود، در سایر آزمون‌های موجود در پلتفرم نیز شرکت کند.
+            `;
+            const userQuery = `یک دانشجوی پرستاری به نام "${resultData.name}" در "${quizData.title}" شرکت کرده است. عملکرد او: - درصد: ${resultData.percentage.toFixed(2)}% - صحیح: ${resultData.correct}, غلط: ${resultData.incorrect}, بی‌پاسخ: ${resultData.unanswered}. لیست سوالات غلط: ${incorrectQuestions || "به هیچ سوالی پاسخ اشتباه نداده است."}. وظیفه شما: 1. یک عنوان جذاب و انگیزشی برای تحلیل بنویس. 2. عملکرد کلی او را در یک پاراگراف کامل تحلیل کن. 3. چند حوزه کلیدی برای مطالعه بیشتر را شناسایی کن. 4. چند راهکار عملی و مشخص (به صورت bullet point) ارائه بده. 5. در انتها یک پیام انگیزشی بنویس و قوانین مهم را رعایت کن.`;
+
+            const maxRetries = 3;
+            let delay = 1000;
+
+            for (let i = 0; i < maxRetries; i++) {
+                 try {
+                    // Conditionally set API key for Preview vs. Live environment
+                    const isPreview = typeof __app_id !== 'undefined';
+                    const apiKey = isPreview ? "" : "AIzaSyDM8TDS86QLxRypLLB1Mb0CIgS1CUVines";
+
+                    // The preview environment will auto-inject the key if it's empty.
+                    // The live environment needs the key to be in the URL.
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+                    const payload = { contents: [{ parts: [{ text: userQuery }] }], systemInstruction: { parts: [{ text: systemPrompt }] }, };
+                    const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    if (!response.ok) throw new Error(`API call failed with status ${response.status}`);
+                    const result = await response.json();
+                    let text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (text) {
+                        const lines = text.split('\n').filter(line => line.trim() !== '');
+                        let htmlContent = '', inList = false;
+                        lines.forEach((line, index) => {
+                            line = line.trim();
+                            const isListItem = line.startsWith('*') || line.startsWith('•');
+                            if (!isListItem && inList) { htmlContent += '</ul>'; inList = false; }
+                            if (isListItem && !inList) { htmlContent += '<ul class="list-disc list-inside space-y-2 mb-3">'; inList = true; }
+                            if (index === 0 && !isListItem) htmlContent += `<h3 class="text-xl font-bold text-gray-800 mb-4">${line.replace(/#+\s*/, '')}</h3>`;
+                            else if (isListItem) htmlContent += `<li>${line.substring(1).trim()}</li>`;
+                            else htmlContent += `<p class="mb-3">${line}</p>`;
+                        });
+                        if (inList) htmlContent += '</ul>';
+                        return htmlContent; // Success, exit loop
+                    }
+                    throw new Error("No text received from API");
+                } catch (error) {
+                    console.error(`Attempt ${i + 1} for AI analysis failed:`, error);
+                    if (i < maxRetries - 1) {
+                        await new Promise(res => setTimeout(res, delay));
+                        delay *= 2; // Exponential backoff
+                    }
+                }
+            }
+
+            return null; // Return null if all retries fail
+        }
+
+        // --- VIEW RENDERING ENGINE ---
+        const renderView = (viewName, props = {}) => {
+            mainContainer.innerHTML = '';
+            let viewContent = '';
+            
+            // This switch generates the HTML content only when needed, preventing premature errors.
+            switch(viewName) {
+                 case 'loading':
+                    viewContent = `<div class="flex flex-col items-center justify-center min-h-[70vh] gap-6 text-center animate-slide-up">
+                        <div class="loading-dots" style="transform: scale(1.5);"><span></span><span></span><span></span></div>
+                        <h2 class="text-2xl font-bold text-gray-700">در حال بارگذاری اطلاعات...</h2>
+                        <p class="text-lg font-semibold text-gray-500">لطفاً چند لحظه صبر کنید.</p>
+                    </div>`;
+                    break; // FIX: Added break to prevent fall-through to 'auth' case
+                 case 'auth':
+                    viewContent = `<div class="card max-w-2xl mx-auto animate-slide-up !p-0 overflow-hidden flex flex-col md:flex-row shadow-2xl">
+                        <div class="w-full md:w-1/2 p-6 sm:p-8">
+                            <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">پلتفرم آزمون آنلاین پرستاری</h2>
+                            <div class="flex justify-center mb-6 border-b"><button id="login-tab-btn" class="tab-btn active">ورود</button><button id="register-tab-btn" class="tab-btn">ثبت نام</button></div>
+                            <form id="login-form"><div class="space-y-3"><input type="email" id="login-email" class="input-field" placeholder="ایمیل" required><div class="relative"><input type="password" id="login-password" class="input-field" placeholder="رمز عبور" required><span class="toggle-password-visibility absolute inset-y-0 left-0 flex items-center pl-3 cursor-pointer"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye text-gray-400" viewBox="0 0 16 16"><path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.816 1.123-2.455 2.226-4.223 2.659A5.006 5.006 0 0 1 8 10.5a5 5 0 0 1-2.605-.724A13.132 13.132 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/></svg></span></div></div><button type="submit" id="login-submit-btn" class="btn btn-primary w-full mt-6">ورود</button><p id="login-error" class="text-red-500 mt-4 h-5 text-center"></p></form>
+                            <form id="register-form" class="hidden"><div class="space-y-3"><input type="text" id="register-name" class="input-field" placeholder="نام و نام خانوادگی" required><input type="tel" id="register-phone" class="input-field" placeholder="شماره تماس (مثال: 09123456789)" required><input type="email" id="register-email" class="input-field" placeholder="ایمیل" required><div class="relative"><input type="password" id="register-password" class="input-field" placeholder="رمز عبور (حداقل ۶ کاراکتر)" required><span class="toggle-password-visibility absolute inset-y-0 left-0 flex items-center pl-3 cursor-pointer"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye text-gray-400" viewBox="0 0 16 16"><path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.816 1.123-2.455 2.226-4.223 2.659A5.006 5.006 0 0 1 8 10.5a5 5 0 0 1-2.605-.724A13.132 13.132 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/></svg></span></div><div class="relative"><input type="password" id="register-password-confirm" class="input-field" placeholder="تکرار رمز عبور" required><span class="toggle-password-visibility absolute inset-y-0 left-0 flex items-center pl-3 cursor-pointer"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye text-gray-400" viewBox="0 0 16 16"><path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.816 1.123-2.455 2.226-4.223 2.659A5.006 5.006 0 0 1 8 10.5a5 5 0 0 1-2.605-.724A13.132 13.132 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/></svg></span></div><p class="text-xs text-gray-500 pt-1 text-center">لطفا ایمیل و رمز عبور خود را جهت ورودهای مجدد به خاطر بسپارید.</p></div><button type="submit" id="register-submit-btn" class="btn btn-primary w-full mt-6">ثبت نام</button><p id="register-error" class="text-red-500 mt-4 h-5 text-center"></p></form>
+                        </div>
+                        <div class="hidden md:flex w-1/2 bg-gradient-to-br from-purple-700 to-indigo-800 p-8 flex-col justify-center items-center text-white text-center">
+                            <h2 class="text-3xl font-bold mb-4">خوش آمدید</h2>
+                            <p class="text-indigo-200 leading-7">برای ورود به پنل آزمون در صورتی که قبلا ثبت نام نکرده اید، ثبت نام کنید... لطفا برای دسترسی به آزمون ها و سابقه کارنامه های خود در حفظ <strong class="font-bold text-white">رمز ورود</strong> دقت بفرمایید.</p>
+                        </div>
+                    </div>`;
+                    break;
+                case 'studentDashboard':
+                    viewContent = `<div class="card animate-slide-up"><div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-8 text-center sm:text-right"><div><h1 class="text-2xl font-bold text-gray-800">داشبورد شما</h1><p class="text-gray-600">خوش آمدید، ${userProfile.name}!</p></div><div class="flex justify-center sm:justify-end gap-2">${currentUser.email === ADMIN_EMAIL ? `<button id="show-admin-panel-btn" class="btn bg-gray-700 hover:bg-gray-800">ورود به پنل استاد</button>` : ''}<button id="logout-student-btn" class="btn bg-red-500 hover:bg-red-600">خروج</button></div></div><div id="progress-chart-container" class="mb-8 hidden"><h2 class="text-xl font-bold text-gray-700 mb-4">نمودار پیشرفت شما</h2><div class="p-4 bg-gray-50 rounded-lg h-64"><canvas id="progressChart"></canvas></div></div>
+                    
+                    <!-- Packages Section -->
+                    <div class="mb-8"><h2 class="text-xl font-bold text-gray-700 mb-4">پکیج‌های در دسترس</h2><div id="available-packages-container" class="space-y-3"></div></div>
+
+                    <!-- Tab Navigation -->
+                    <div class="tab-scroll-wrapper mb-2 border-b border-gray-200"> <!-- Removed overflow-x-auto, changed mb-4 to mb-2 -->
+                        <div id="inner-tab-scroller" class="overflow-x-auto"> <!-- Added this inner scrolling div -->
+                            <nav id="category-tabs" class="flex -mb-px space-x-4 rtl:space-x-reverse"></nav>
+                        </div>
+                    </div>
+                    <!-- Tab Dots Indicator -->
+                    <div id="category-dots-container" class="flex justify-center items-center space-x-2 rtl:space-x-reverse mb-4"></div>
+                    
+                    <!-- Quizzes Section -->
+                    <div class="mb-8"><h2 class="text-xl font-bold text-gray-700 mb-4">آزمون‌های در دسترس</h2><div class="relative mb-4"><input type="text" id="quiz-search-input" class="input-field !pl-10" placeholder="جستجوی آزمون یا پکیج بر اساس نام یا مبحث..."><span class="absolute inset-y-0 left-0 flex items-center pl-3"><svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg></span></div><div id="available-quizzes-container" class="space-y-3"></div></div><div><h2 class="text-xl font-bold text-gray-700 mb-4">آزمون‌های شرکت کرده</h2><div id="completed-quizzes-container" class="space-y-3"></div></div></div>`;
+                    break;
+                case 'adminDashboard':
+                    viewContent = `<div class="card !p-0 overflow-hidden flex flex-col min-h-[85vh] animate-slide-up">
+                        <!-- Sidebar / Topbar -->
+                        <div class="w-full bg-gray-800 text-gray-200 p-4 md:p-5 flex-shrink-0">
+                            <!-- Unified Header -->
+                            <div class="flex justify-between items-center md:justify-start md:gap-3 mb-4 md:mb-8">
+                                <div class="flex items-center gap-3">
+                                    <div class="bg-purple-600 p-2 rounded-lg">
+                                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                    </div>
+                                    <h1 class="text-xl font-bold text-white">پنل استاد</h1>
+                                </div>
+                                <!-- Mobile-only Back Button -->
+                                <button class="js-back-to-dash md:hidden btn bg-purple-800 hover:bg-purple-700 !p-2 !rounded-lg">
+                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                                </button>
+                            </div>
+
+                            <nav class="flex flex-row md:flex-col md:space-y-2 overflow-x-auto whitespace-nowrap pb-2 md:pb-0 gap-2">
+                                <button data-tab="results" class="admin-tab-btn flex-shrink-0 text-right flex items-center gap-3 p-3 rounded-lg hover:bg-gray-700 font-medium transition-colors">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                                    <span class="hidden md:inline">تحلیل نتایج</span><span class="md:hidden">نتایج</span>
+                                </button>
+                                <button data-tab="payments" class="admin-tab-btn flex-shrink-0 text-right flex items-center gap-3 p-3 rounded-lg hover:bg-gray-700 font-medium transition-colors">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                                    <span class="hidden md:inline">مدیریت پرداخت‌ها</span><span class="md:hidden">پرداخت‌ها</span>
+                                </button>
+                                <button data-tab="quiz_management" class="admin-tab-btn flex-shrink-0 text-right flex items-center gap-3 p-3 rounded-lg hover:bg-gray-700 font-medium transition-colors">
+                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                                    <span class="hidden md:inline">مدیریت آزمون‌ها</span><span class="md:hidden">آزمون‌ها</span>
+                                </button>
+                                <button data-tab="package_management" class="admin-tab-btn flex-shrink-0 text-right flex items-center gap-3 p-3 rounded-lg hover:bg-gray-700 font-medium transition-colors">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+                                    <span class="hidden md:inline">مدیریت پکیج‌ها</span><span class="md:hidden">پکیج‌ها</span>
+                                </button>
+                                <button data-tab="discounts" class="admin-tab-btn flex-shrink-0 text-right flex items-center gap-3 p-3 rounded-lg hover:bg-gray-700 font-medium transition-colors">
+                                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-5 5a2 2 0 01-2.828 0l-7-7A2 2 0 013 8V5a2 2 0 012-2h2z"></path></svg>
+                                   <span class="hidden md:inline">مدیریت تخفیف‌ها</span><span class="md:hidden">تخفیف</span>
+                                </button>
+                                <button data-tab="prices" class="admin-tab-btn flex-shrink-0 text-right flex items-center gap-3 p-3 rounded-lg hover:bg-gray-700 font-medium transition-colors">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v.01M12 6v-1h4v1m-7 6h7m-3 6h3m-1 4v-2m-6-13a1 1 0 011-1h12a1 1 0 011 1v16a1 1 0 01-1 1H6a1 1 0 01-1-1V6z"></path></svg>
+                                    <span class="hidden md:inline">مدیریت قیمت‌ها</span><span class="md:hidden">قیمت‌ها</span>
+                                </button>
+                            </nav>
+                            <div class="mt-auto pt-6 hidden md:block">
+                                <button class="js-back-to-dash w-full flex items-center justify-center gap-2 p-3 rounded-lg bg-purple-800 hover:bg-purple-700 font-medium text-white transition-colors">
+                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                                    <span>بازگشت به داشبورد</span>
+                                </button>
+                            </div>
+                        </div>
+                        <!-- Main Content -->
+                        <div class="flex-grow p-4 md:p-8 overflow-y-auto bg-gray-50" id="admin-content"></div>
+                    </div>`;
+                    break;
+                 case 'quiz':
+                    const quizData = allQuizzes[props.quizId];
+                    viewContent = `<div class="card !p-6 md:!p-8 animate-slide-up">
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <div><h2 class="text-xl font-bold text-gray-800">سوال <span id="question-number">1</span> / ${quizData.questions.length}</h2></div>
+                                <div class="text-left"><div class="text-lg font-bold text-purple-600 bg-purple-100 px-3 py-1 rounded-lg inline-block" id="timer"></div></div>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5 mb-4"><div id="progress-bar" class="bg-purple-600 h-2.5 rounded-full" style="width: ${100 / quizData.questions.length}%"></div></div>
+                            <p id="question-text" class="text-lg md:text-xl text-right font-semibold text-gray-700 mb-4 min-h-[4rem]"></p>
+                            <div id="options-container" class="space-y-3"></div>
+                            <div class="flex justify-between mt-6">
+                                <button id="previous-btn" class="btn bg-gray-500 hover:bg-gray-600">سوال قبلی</button>
+                                <button id="next-btn" class="btn btn-primary">سوال بعدی</button>
+                            </div>
+                        </div>`;
+                    break;
+                 case 'result':
+                    let backButtonHtml = `<button id="back-to-dashboard-btn" class="btn btn-primary !py-2 !px-4">بازگشت به داشبورد</button>`;
+                    if (props.origin === 'admin') {
+                        backButtonHtml = `<button id="back-to-admin-panel-btn" class="btn btn-primary !py-2 !px-4">بازگشت به پنل استاد</button>`;
+                    }
+                     viewContent = `<div class="card animate-slide-up">
+                        <div class="flex justify-between items-center mb-4 border-b pb-4">
+                            <h1 class="text-2xl md:text-3xl font-bold text-gray-800">کارنامه آزمون</h1>
+                            ${backButtonHtml}
+                        </div>
+                        <div class="text-center">
+                            <p class="text-xl text-gray-600 mb-2">${props.resultData.name}</p>
+                            <p class="text-lg text-gray-500 mb-8">${allQuizzes[props.resultData.quizId]?.title || 'آزمون حذف شده'}</p>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                           <div class="p-6 bg-purple-50 rounded-lg text-center"><p class="text-lg text-purple-800 font-semibold">درصد کل</p><p class="text-4xl font-bold text-purple-600">${props.resultData.percentage.toFixed(2)}%</p></div>
+                           <div class="p-6 bg-green-50 rounded-lg text-center"><p class="text-lg text-green-800 font-semibold">درصد احتمالی (بدون غلط)</p><p class="text-4xl font-bold text-green-600">${props.resultData.potentialPercentage.toFixed(2)}%</p></div>
+                           <div class="p-6 bg-indigo-50 rounded-lg text-center"><p class="text-lg text-indigo-800 font-semibold">رتبه شما</p><p class="text-4xl font-bold text-indigo-600">${props.rank}</p></div>
+                        </div>
+                        <div class="my-8 border-t pt-8">
+                            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">قدم بعدی برای موفقیت شما</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <!-- Card 1: Course -->
+                                <div class="p-6 bg-green-50 rounded-2xl text-center flex flex-col items-center shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
+                                    <div class="p-3 bg-green-200 rounded-full mb-3"><svg class="w-8 h-8 text-green-700"  fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 14l9-5-9-5-9 5 9 5z" /><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" /></svg></div>
+                                    <h3 class="text-lg font-bold text-green-800">دوره جامع روان پرستاری</h3>
+                                    <p class="text-green-700 text-sm my-2 flex-grow">با شرکت در این دوره، شانس قبولی خود را تضمین کنید.</p>
+                                    <a href="https://psynurse.ir/shop/online-c/P1062-%D8%AF%D9%88%D8%B1%D9%87-%D8%AC%D8%A7%D9%85%D8%B9-%D8%B1%D9%88%D8%A7%D9%86-%D9%BE%D8%B1%D8%B3%D8%AA%D8%A7%D8%B1%DB%8C-%D8%A7%D8%B1%D8%B4%D8%AF-%DB%B1%DB%B4%DB%B0%DB%B5.html" target="_blank" class="ad-link-btn btn bg-green-600 hover:bg-green-700 mt-2 !text-sm !py-2 !px-4">مشاهده دوره</a>
+                                </div>
+                                <!-- Card 2: Consultation -->
+                                <div class="p-6 bg-blue-50 rounded-2xl text-center flex flex-col items-center shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
+                                     <div class="p-3 bg-blue-200 rounded-full mb-3"><svg class="w-8 h-8 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg></div>
+                                    <h3 class="text-lg font-bold text-blue-800">مشاوره و برنامه‌ریزی</h3>
+                                    <p class="text-blue-700 text-sm my-2 flex-grow">با مشاوره تخصصی خانم کلیج، مسیر خود را برای آزمون ارشد هموار کنید.</p>
+                                    <a href="https://psynurse.ir/blog/%D9%85%D8%B4%D8%A7%D9%88%D8%B1%D9%87-%D9%88-%D8%A8%D8%B1%D9%86%D8%A7%D9%85%D9%87-%D8%B1%DB%8C%D8%B2%DB%8C/P1063-%D9%85%D8%B4%D8%A7%D9%88%D8%B1%D9%87-%D9%88-%D8%A8%D8%B1%D9%86%D8%A7%D9%85%D9%87-%D8%B1%DB%8C%D8%B2%DB%8C-%D8%A7%D8%B1%D8%B4%D8%AF-%D9%BE%D8%B1%D8%B3%D8%AA%D8%A7%D8%B1%DB%8C-%D8%AE%D8%A7%D9%86%D9%85-%D9%81%D8%A7%D8%B7%D9%85%D9%87-%DA%A9%D9%84%DB%8C%D8%AC-%DA%A9%D8%A7%D8%B1%D8%B4%D9%86%D8%A7%D8%B3-%D8%A7%D8%B1%D8%B4%D8%AF-%D8%A7%D8%B2-%D8%AF%D8%A7%D9%86%D8%B4%DA%AF%D8%A7%D9%87-%D8%B9%D9%84%D9%88%D9%85-%D9%BE%D8%B2%D8%B4%DA%A9%DB%8C-%D8%A7%D8%B5%D9%81%D9%87%D8%A7%D9%86.html" target="_blank" class="ad-link-btn btn bg-blue-600 hover:bg-blue-700 mt-2 !text-sm !py-2 !px-4">دریافت مشاوره</a>
+                                </div>
+                                <!-- Card 3: Book -->
+                                <div class="p-6 bg-amber-50 rounded-2xl text-center flex flex-col items-center shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
+                                    <div class="p-3 bg-amber-200 rounded-full mb-3"><svg class="w-8 h-8 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg></div>
+                                    <h3 class="text-lg font-bold text-amber-800">کتاب تست اوج روان</h3>
+                                    <p class="text-amber-700 text-sm my-2 flex-grow">منبعی کامل و ضروری برای تسلط بر تست‌های روان پرستاری.</p>
+                                    <a href="https://psynurse.ir/shop/%DA%A9%D8%AA%D8%A7%D8%A8%D8%AE%D8%A7%D9%86%D9%87-%D9%BE%D8%B1%D8%B3%D8%AA%D8%A7%D8%B1%DB%8C/P1071-%D8%A7%D9%88%D8%AC-%D8%B1%D9%88%D8%A7%D9%86.html" target="_blank" class="ad-link-btn btn bg-amber-600 hover:bg-amber-700 mt-2 !text-sm !py-2 !px-4">خرید کتاب</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="ai-consultation-container" class="border-t pt-8 mt-8"><h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">تحلیل آزمون و مشاوره هوشمند</h2><div id="ai-consultation-content" class="p-6 bg-purple-50 text-purple-800 rounded-lg"><p class="text-center animate-pulse">درحال آماده سازی تحلیل آزمون و نتیجه شما...</p></div></div>
+                        <div class="border-t pt-8 mt-8">
+                           <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">تحلیل عملکرد</h2>
+                           <div class="max-w-xs mx-auto"><canvas id="resultPieChart"></canvas></div>
+                        </div>
+                        <div class="border-t pt-8 mt-8"><h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">بررسی سوالات</h2><div id="question-review-container" class="space-y-6 max-h-96 overflow-y-auto p-4 bg-gray-50 rounded-lg"></div></div>
+                    </div>`;
+                    break;
+                case 'paymentInstructions':
+                    const item = props.itemType === 'quiz' ? allQuizzes[props.itemId] : allPackages[props.itemId];
+                    const originalPrice = props.itemType === 'quiz' ? (quizSettings[props.itemId]?.price ?? item.price) : item.price;
+                    
+                    viewContent = `<div class="card max-w-lg mx-auto text-center animate-slide-up"><h2 class="text-2xl font-bold text-gray-800 mb-4">راهنمای پرداخت</h2><p class="mb-6">برای فعال‌سازی "${item.title}"، لطفاً مبلغ زیر را به شماره کارت داده شده واریز نمایید.</p><div class="p-6 bg-purple-50 border-2 border-dashed border-purple-300 rounded-lg mb-6"><p class="text-lg">مبلغ قابل پرداخت:</p><p id="payment-amount" class="text-4xl font-bold text-purple-700 my-2">${props.finalPrice.toLocaleString('fa-IR')} تومان</p>${props.finalPrice < originalPrice ? `<p class="text-green-600 font-semibold">(مبلغ ${ (originalPrice - props.finalPrice).toLocaleString('fa-IR') } تومان بابت آزمون‌هایی که قبلاً تهیه کرده‌اید، کسر گردید)</p>` : ''}<p class="text-lg mt-4">به شماره کارت:</p><div class="flex flex-col sm:flex-row items-center justify-center gap-2 my-2"><p id="card-number-text" class="text-2xl font-bold text-gray-700 tracking-widest">${PAYMENT_INFO.displayedCardNumber}</p><button id="copy-card-btn" class="btn !p-2 !rounded-lg bg-gray-200 hover:bg-gray-300 !text-gray-700 w-full sm:w-auto mt-2 sm:mt-0" title="کپی کردن شماره کارت"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 4h8a2 2 0 012 2v8a2 2 0 01-2 2h-8a2 2 0 01-2-2v-8a2 2 0 012-2z"></path></svg></button></div><p class="text-md text-gray-600">به نام: ${PAYMENT_INFO.accountHolder}</p></div><div class="my-6"><label for="discount-code-input" class="block mb-2 text-sm font-medium text-gray-900">کد تخفیف دارید؟</label><div class="flex items-center gap-2"><input type="text" id="discount-code-input" class="input-field text-center tracking-widest" placeholder="کد تخفیف"><button id="apply-discount-btn" class="btn btn-primary px-4">اعمال</button></div><p id="discount-feedback" class="text-sm mt-2 h-5"></p></div><p class="text-sm text-gray-500 mb-6">پس از واریز، روی دکمه زیر کلیک کرده و اطلاعات تراکنش خود را برای تایید ثبت کنید.</p><div class="flex flex-col sm:flex-row justify-between gap-3"><button id="back-to-dash-btn" class="btn bg-gray-500 hover:bg-gray-600">انصراف</button><button id="proceed-to-submit-btn" class="btn btn-primary">اطلاعات واریز را ثبت می‌کنم</button></div></div>`;
+                    break;
+                case 'paymentSubmission':
+                     const itemForSubmit = props.itemType === 'quiz' ? allQuizzes[props.itemId] : allPackages[props.itemId];
+                     viewContent = `<div class="card max-w-lg mx-auto animate-slide-up"><h2 class="text-2xl font-bold text-gray-800 mb-2">ثبت اطلاعات واریز</h2><p class="mb-6 text-gray-600">برای: <span class="font-bold">${itemForSubmit.title}</span></p><p class="mb-6 text-gray-800">مبلغ واریز شده: <span class="font-bold text-purple-700">${props.finalPrice.toLocaleString('fa-IR')} تومان</span></p><form id="payment-submission-form"><label class="block mb-2 font-semibold">چهار رقم آخر کارت واریزی را وارد کنید</label><input type="tel" id="last-four-digits" class="input-field !text-center !tracking-[0.5em]" placeholder="۰۰۰۰" required maxlength="4" pattern="[0-9۰-۹]{4}" oninput="this.value = this.value.replace(/[^0-9۰-۹]/g, '').slice(0, 4)"><p class="text-xs text-gray-500 mt-2">این چهار رقم برای تطبیق واریزی شما توسط استاد استفاده خواهد شد.</p><p class="text-sm text-purple-700 font-semibold mt-4">توجه: فرآیند تایید پرداخت شما معمولاً کمتر از نیم ساعت زمان می‌برد.</p><div class="flex flex-col sm:flex-row justify-between mt-8 gap-3"><button type="button" id="back-to-instructions-btn" class="btn bg-gray-500 hover:bg-gray-600">بازگشت</button><button type="submit" id="submit-payment-btn" class="btn btn-primary">ثبت و انتظار برای تایید</button></div><p id="payment-submit-error" class="text-red-500 mt-4 h-5 text-center"></p></form></div>`;
+                    break;
+            }
+            mainContainer.innerHTML = viewContent;
+            attachEventListeners(viewName, props);
+        };
+        
+        // --- EVENT LISTENER ATTACHMENT ---
+        const attachEventListeners = (viewName, props) => {
+             if (viewName === 'auth') {
+                const loginForm = document.getElementById('login-form'), registerForm = document.getElementById('register-form');
+                document.getElementById('login-tab-btn').addEventListener('click', () => { loginForm.classList.remove('hidden'); registerForm.classList.add('hidden'); document.getElementById('login-tab-btn').classList.add('active'); document.getElementById('register-tab-btn').classList.remove('active'); });
+                document.getElementById('register-tab-btn').addEventListener('click', () => { loginForm.classList.add('hidden'); registerForm.classList.remove('hidden'); document.getElementById('login-tab-btn').classList.remove('active'); document.getElementById('register-tab-btn').classList.add('active'); });
+                registerForm.addEventListener('submit', handleRegister);
+                loginForm.addEventListener('submit', handleLogin);
+                document.querySelectorAll('.toggle-password-visibility').forEach(icon => {
+                    icon.addEventListener('click', () => {
+                        const passwordInput = icon.previousElementSibling;
+                        const isPassword = passwordInput.type === 'password';
+                        passwordInput.type = isPassword ? 'text' : 'password';
+                        icon.innerHTML = isPassword ? 
+                            `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye-slash text-gray-400" viewBox="0 0 16 16"><path d="M13.359 11.238C15.06 9.72 16 8 16 8s-3-5.5-8-5.5a7.028 7.028 0 0 0-2.79.588l.77.771A5.94 5.94 0 0 1 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.134 13.134 0 0 1 14.828 8c-.058.113-.116.227-.176.338l.77.772c.036-.058.073-.115.11-.174zM11.115 12.883l.168.167a5.94 5.94 0 0 1-1.282.454A6.002 6.002 0 0 1 8 13.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8l.195-.238c.17-.207.35-.407.54-.602l.167.167A5.94 5.94 0 0 1 4.5 8c0 .244.028.482.08.714l.21.21a2.5 2.5 0 0 0 3.12 3.12l.21.21c.232.052.47.08.714.08a4.5 4.5 0 0 0 2.22-.505l.167.167zm-4.48-4.48a3.5 3.5 0 1 1-4.95-4.95a3.5 3.5 0 0 1 4.95 4.95zM1.359 4.238A13.134 13.134 0 0 1 .172 8l.195.238c.333.406.72.78 1.145 1.11l.167-.167a5.94 5.94 0 0 1-1.282-.454A6.002 6.002 0 0 1 2.5 8c0-.244.028-.482.08-.714l.21-.21a2.5 2.5 0 0 0-3.12-3.12l-.21-.21A4.5 4.5 0 0 0 1.505 5.5l-.167-.167zm12.28 9.28l-1.414-1.414a10.994 10.994 0 0 0-3.483-.98A5.94 5.94 0 0 1 8 10.5a2.5 2.5 0 1 1 3.536-3.536l1.414-1.414a1 1 0 0 0-1.414-1.414l-11.314 11.314a1 1 0 1 0 1.414 1.414l1.414-1.414A10.994 10.994 0 0 0 8 13.5a5.94 5.94 0 0 1-3.045-1.01l-1.414-1.414a1 1 0 0 0-1.414 1.414l11.314-11.314a1 1 0 0 0 1.414 1.414z"/></svg>` : 
+                            `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye text-gray-400" viewBox="0 0 16 16"><path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.816 1.123-2.455 2.226-4.223 2.659A5.006 5.006 0 0 1 8 10.5a5 5 0 0 1-2.605-.724A13.132 13.132 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/></svg>`;
+                    });
+                });
+            } else if (viewName === 'studentDashboard') {
+                const adminBtn = document.getElementById('show-admin-panel-btn');
+                if (adminBtn) adminBtn.addEventListener('click', () => {
+                    if (unsubscribeUserPaymentsListener) unsubscribeUserPaymentsListener();
+                    renderView('adminDashboard');
+                });
+                document.getElementById('logout-student-btn').addEventListener('click', () => signOut(auth));
+                document.getElementById('quiz-search-input').addEventListener('input', handleQuizSearch);
+                loadStudentQuizzes();
+            } else if (viewName === 'adminDashboard') {
+                const backToDashboard = () => {
+                    if (unsubscribeAdminListener) unsubscribeAdminListener();
+                    listenForUserPayments();
+                    renderView('studentDashboard'); 
+                };
+                document.querySelectorAll('.js-back-to-dash').forEach(btn => btn.addEventListener('click', backToDashboard));
+                
+                document.querySelectorAll('.admin-tab-btn').forEach(btn => btn.addEventListener('click', () => handleAdminTabChange(btn.dataset.tab)));
+                handleAdminTabChange('results');
+            } else if (viewName === 'quiz') {
+                document.getElementById('next-btn').addEventListener('click', handleNextQuestion);
+                document.getElementById('previous-btn').addEventListener('click', handlePreviousQuestion);
+            } else if (viewName === 'result') {
+                const studentBackBtn = document.getElementById('back-to-dashboard-btn');
+                if (studentBackBtn) studentBackBtn.addEventListener('click', () => renderView('studentDashboard'));
+                
+                const adminBackBtn = document.getElementById('back-to-admin-panel-btn');
+                if (adminBackBtn) adminBackBtn.addEventListener('click', () => renderView('adminDashboard'));
+
+                document.querySelectorAll('.ad-link-btn').forEach(btn => {
+                     btn.addEventListener('click', () => {
+                        // This logic is now simpler: always update on click.
+                        const resultDocRef = doc(db, 'quiz_results', props.resultData.id);
+                        updateDoc(resultDocRef, { adClicked: true });
+                        props.resultData.adClicked = true; // Update local state to prevent multiple unnecessary writes in the same session
+                    });
+                });
+                
+                renderResultPieChart(props.resultData);
+                renderQuestionReview(props.resultData);
+                
+                const contentEl = document.getElementById('ai-consultation-content');
+                if (props.resultData.aiAnalysis) {
+                    // If analysis is already saved, just display it.
+                    contentEl.innerHTML = props.resultData.aiAnalysis;
+                } else {
+                    // If no analysis is saved, attempt to generate it.
+                    getAIAnalysis(props.resultData).then(analysis => {
+                        if (contentEl) {
+                            if (analysis) {
+                                // SUCCESS: Analysis was generated.
+                                // 1. Display it.
+                                contentEl.innerHTML = analysis;
+                                // 2. Save it to Firestore for future visits.
+                                const resultDocRef = doc(db, 'quiz_results', props.resultData.id);
+                                updateDoc(resultDocRef, { aiAnalysis: analysis });
+                            } else {
+                                // FAILURE: Analysis could not be generated.
+                                // Display a temporary error message, but DO NOT save it to Firestore.
+                                contentEl.innerHTML = '<p class="text-center text-red-600 font-semibold">خطا در ایجاد تحلیل هوشمند. لطفاً اتصال اینترنت خود را بررسی کرده و صفحه را دوباره بارگذاری کنید.</p>';
+                            }
+                        }
+                    });
+                }
+
+            } else if (viewName === 'paymentInstructions') {
+                document.getElementById('back-to-dash-btn').addEventListener('click', () => renderView('studentDashboard'));
+                document.getElementById('proceed-to-submit-btn').addEventListener('click', () => renderView('paymentSubmission', { itemId: props.itemId, itemType: props.itemType, finalPrice: props.finalPrice }));
+                document.getElementById('apply-discount-btn').addEventListener('click', () => handleApplyDiscount(props.itemId, props.itemType, props.originalPrice, props.finalPrice));
+                document.getElementById('copy-card-btn').addEventListener('click', () => copyToClipboard(PAYMENT_INFO.rawCardNumber));
+            }
+            else if (viewName === 'paymentSubmission') {
+                document.getElementById('back-to-instructions-btn').addEventListener('click', () => handlePayment(props.itemId, props.itemType));
+                document.getElementById('payment-submission-form').addEventListener('submit', (e) => handlePaymentSubmission(e, props.itemId, props.itemType, props.finalPrice));
+            }
+        };
+
+        // --- AUTH CONTROLLER ---
+        onAuthStateChanged(auth, async (user) => {
+            renderView('loading');
+            if (user) {
+                const userDoc = await getDoc(doc(db, 'users', user.uid));
+                if (userDoc.exists()) {
+                    currentUser = user;
+                    userProfile = sanitizeObjectKeys(userDoc.data());
+                    Object.values({unsubscribeUserPaymentsListener, unsubscribeQuizSettingsListener, unsubscribeDiscountsListener, unsubscribeQuizzesListener, unsubscribePackagesListener}).forEach(unsub => unsub && unsub());
+                    listenForQuizzes(); 
+                    listenForPackages();
+                    listenForQuizSettings();
+                    listenForDiscounts();
+                    listenForUserPayments();
+                    renderView('studentDashboard');
+                } else { await signOut(auth); }
+            } else {
+                currentUser = null; userProfile = null;
+                Object.values({unsubscribeAdminListener, unsubscribeUserPaymentsListener, unsubscribeQuizSettingsListener, unsubscribeDiscountsListener, unsubscribeQuizzesListener, unsubscribePackagesListener}).forEach(unsub => unsub && unsub());
+                renderView('auth');
+            }
+        });
+
+        // --- HANDLER FUNCTIONS ---
+        const handleRegister = async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('register-name').value.trim(), phone = document.getElementById('register-phone').value.trim(), email = document.getElementById('register-email').value.trim(), password = document.getElementById('register-password').value, confirmPassword = document.getElementById('register-password-confirm').value;
+            const errorEl = document.getElementById('register-error'), submitBtn = document.getElementById('register-submit-btn');
+            errorEl.textContent = '';
+            if (!name || !phone || !email || !password || !confirmPassword) { errorEl.textContent = 'لطفاً تمام فیلدها را پر کنید.'; return; }
+            if (password !== confirmPassword) { errorEl.textContent = 'رمزهای عبور با یکدیگر مطابقت ندارند.'; return; }
+            if (!/^09\d{9}$/.test(phone)) { errorEl.textContent = 'شماره تماس باید ۱۱ رقم باشد و با 09 شروع شود.'; return; }
+            toggleButtonLoading(submitBtn, true, 'ثبت نام');
+            try {
+                if (!(await getDocs(query(collection(db, 'users'), where("phone", "==", phone)))).empty) throw { code: 'auth/phone-number-already-in-use' };
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                await setDoc(doc(db, 'users', userCredential.user.uid), { name, phone, email });
+            } catch (error) {
+                const errorMap = {'auth/email-already-in-use': 'این ایمیل قبلاً ثبت نام کرده است.', 'auth/phone-number-already-in-use': 'این شماره تماس قبلاً ثبت نام کرده است.', 'auth/weak-password': 'رمز عبور باید حداقل ۶ کاراکتر باشد.'};
+                errorEl.textContent = errorMap[error.code] || 'خطا در ثبت نام. دوباره تلاش کنید.';
+                console.error("Registration Error: ", error); 
+            } finally {
+                toggleButtonLoading(submitBtn, false, 'ثبت نام');
+            }
+        };
+
+        const handleLogin = async (e) => {
+             e.preventDefault();
+            const email = document.getElementById('login-email').value.trim(), password = document.getElementById('login-password').value;
+            const errorEl = document.getElementById('login-error'), submitBtn = document.getElementById('login-submit-btn');
+            toggleButtonLoading(submitBtn, true, 'ورود');
+            errorEl.textContent = '';
+            try { await signInWithEmailAndPassword(auth, email, password); } 
+            catch (error) {
+                errorEl.textContent = error.code === 'auth/invalid-credential' ? 'ایمیل یا رمز عبور اشتباه است.' : 'خطا در ورود. دوباره تلاش کنید.';
+                console.error("Login Error: ", error);
+            } finally {
+                toggleButtonLoading(submitBtn, false, 'ورود');
+            }
+        };
+        
+        async function handlePayment(itemId, itemType) {
+            let item, originalPrice, finalPrice;
+            
+            if (itemType === 'quiz') {
+                item = allQuizzes[itemId];
+                originalPrice = quizSettings[itemId]?.price ?? item.price;
+                finalPrice = originalPrice;
+            } else { // itemType === 'package'
+                item = allPackages[itemId];
+                originalPrice = item.price;
+                
+                // Calculate discounted price based on already purchased quizzes
+                const approvedQuizPayments = userPayments.filter(p => p.status === 'approved' && p.itemType === 'quiz').map(p => p.itemId);
+                let discountForOwnedQuizzes = 0;
+                
+                item.quizIds.forEach(quizId => {
+                    if (approvedQuizPayments.includes(quizId) && allQuizzes[quizId]) {
+                        const quizPrice = quizSettings[quizId]?.price ?? allQuizzes[quizId].price;
+                        discountForOwnedQuizzes += quizPrice;
+                    }
+                });
+                
+                finalPrice = Math.max(0, originalPrice - discountForOwnedQuizzes);
+            }
+
+            renderView('paymentInstructions', { itemId, itemType, originalPrice, finalPrice });
+        }
+        
+        async function handlePaymentSubmission(e, itemId, itemType, finalPrice) {
+            e.preventDefault();
+            let lastFourDigits = document.getElementById('last-four-digits').value.trim();
+            lastFourDigits = convertPersianToLatin(lastFourDigits); // تبدیل اعداد فارسی به انگلیسی
+            
+            if (!lastFourDigits || lastFourDigits.length !== 4) { document.getElementById('payment-submit-error').textContent = 'لطفاً چهار رقم آخر کارت را به درستی وارد کنید.'; return; }
+            const submitBtn = document.getElementById('submit-payment-btn');
+            toggleButtonLoading(submitBtn, true, 'در حال ثبت');
+            
+            const item = itemType === 'quiz' ? allQuizzes[itemId] : allPackages[itemId];
+            
+            try {
+                await addDoc(collection(db, 'payments'), { 
+                    userId: currentUser.uid, 
+                    userName: userProfile.name, 
+                    userEmail: currentUser.email, 
+                    itemId, 
+                    itemType, // 'quiz' or 'package'
+                    itemTitle: item.title, 
+                    lastFourDigits: lastFourDigits, 
+                    finalPrice: finalPrice, // Save the final price paid
+                    status: 'pending', 
+                    timestamp: Timestamp.now() 
+                });
+                
+                showModal(
+                    'ثبت با موفقیت انجام شد', 
+                    'اطلاعات واریز شما با موفقیت ثبت شد. پس از تایید توسط استاد، دسترسی شما فعال خواهد شد.',
+                    'متوجه شدم',
+                    null,
+                    () => renderView('studentDashboard')
+                );
+
+            } catch (error) {
+                console.error("Error submitting payment:", error);
+                document.getElementById('payment-submit-error').textContent = 'خطا در ثبت اطلاعات.';
+            } finally {
+                toggleButtonLoading(submitBtn, false, 'ثبت و انتظار برای تایید');
+            }
+        }
+
+        function handleQuizSearch(e) {
+            const searchTerm = e.target.value.toLowerCase().trim();
+            const quizzesToFilter = Object.entries(allQuizzes);
+            
+            const filteredQuizzes = quizzesToFilter.filter(([quizId, quizData]) => {
+                const titleMatch = quizData.title.toLowerCase().includes(searchTerm);
+                const topicMatch = quizData.topics && quizData.topics.some(topic => topic.toLowerCase().includes(searchTerm));
+                return titleMatch || topicMatch;
+            });
+            
+            const packagesToFilter = Object.entries(allPackages);
+            const filteredPackages = packagesToFilter.filter(([pkgId, pkgData]) => {
+                 const titleMatch = pkgData.title.toLowerCase().includes(searchTerm);
+                 // Also search in the titles of the quizzes within the package
+                 const quizInPackageMatch = pkgData.quizIds.some(quizId => 
+                    allQuizzes[quizId] && allQuizzes[quizId].title.toLowerCase().includes(searchTerm)
+                 );
+                 return titleMatch || quizInPackageMatch;
+            });
+
+            loadStudentQuizzes(Object.fromEntries(filteredQuizzes), Object.fromEntries(filteredPackages), true);
+        }
+        
+        // --- DATA LISTENERS ---
+        function listenForQuizzes() {
+            if(unsubscribeQuizzesListener) unsubscribeQuizzesListener();
+            unsubscribeQuizzesListener = onSnapshot(collection(db, 'quizzes'), (snapshot) => {
+                allQuizzes = {};
+                snapshot.docs.forEach(doc => allQuizzes[doc.id] = sanitizeObjectKeys(doc.data()));
+                const isStudentView = mainContainer.querySelector('#available-quizzes-container'), isAdminView = mainContainer.querySelector('#admin-content');
+                if (isStudentView) loadStudentQuizzes();
+                else if (isAdminView) handleAdminTabChange(document.querySelector('.admin-tab-btn.active')?.dataset.tab);
+            }, (error) => console.error("خطا در خواندن آزمون‌ها:", error));
+        }
+
+        function listenForPackages() {
+            if(unsubscribePackagesListener) unsubscribePackagesListener();
+            unsubscribePackagesListener = onSnapshot(collection(db, 'quiz_packages'), (snapshot) => {
+                allPackages = {};
+                snapshot.docs.forEach(doc => allPackages[doc.id] = { id: doc.id, ...sanitizeObjectKeys(doc.data()) });
+                const isStudentView = mainContainer.querySelector('#available-quizzes-container');
+                if (isStudentView) loadStudentQuizzes();
+            }, (error) => console.error("Error fetching quiz packages:", error));
+        }
+
+        function listenForQuizSettings() {
+            if(unsubscribeQuizSettingsListener) unsubscribeQuizSettingsListener();
+            unsubscribeQuizSettingsListener = onSnapshot(collection(db, 'quiz_settings'), (snapshot) => {
+                quizSettings = {};
+                snapshot.docs.forEach(doc => quizSettings[doc.id] = sanitizeObjectKeys(doc.data()));
+                if (mainContainer.querySelector('#available-quizzes-container')) loadStudentQuizzes();
+                if (mainContainer.querySelector('#quiz-management-container')) renderAdminQuizManagement();
+                if (mainContainer.querySelector('#admin-prices-container')) renderAdminPriceManagement();
+            }, (error) => console.error("Error fetching quiz settings:", error));
+        }
+
+        function listenForDiscounts() {
+            if(unsubscribeDiscountsListener) unsubscribeDiscountsListener();
+            unsubscribeDiscountsListener = onSnapshot(collection(db, 'discount_codes'), (snapshot) => {
+                discounts = snapshot.docs.map(doc => ({ id: doc.id, ...sanitizeObjectKeys(doc.data()) }));
+                if (mainContainer.querySelector('#admin-discounts-container')) renderAdminDiscounts();
+            }, (error) => console.error("Error fetching discounts:", error));
+        }
+
+        function listenForUserPayments() {
+            if(unsubscribeUserPaymentsListener) unsubscribeUserPaymentsListener();
+            unsubscribeUserPaymentsListener = onSnapshot(query(collection(db, 'payments'), where("userId", "==", currentUser.uid)), (snapshot) => {
+                userPayments = snapshot.docs.map(doc => sanitizeObjectKeys(doc.data()));
+                if (mainContainer.querySelector('#available-quizzes-container')) loadStudentQuizzes();
+            }, (error) => console.error("Error fetching user payments:", error));
+        }
+
+        // --- STUDENT DASHBOARD LOGIC ---
+        async function loadStudentQuizzes(quizzesToDisplay = allQuizzes, packagesToDisplay = allPackages, isSearch = false) {
+            const completedContainer = document.getElementById('completed-quizzes-container');
+            const tabsContainer = document.getElementById('category-tabs');
+            const dotsContainer = document.getElementById('category-dots-container');
+            const availablePackagesContainer = document.getElementById('available-packages-container'); // New container
+            const availableQuizzesContainer = document.getElementById('available-quizzes-container'); // Existing container
+            
+            // --- 1. Load Completed Quizzes (only if not searching) ---
+            if (!isSearch) {
+                 const resultsCollection = collection(db, 'quiz_results');
+                const q = query(resultsCollection, where("userId", "==", currentUser.uid));
+                const snapshot = await getDocs(q);
+                const completedResults = snapshot.docs.map(doc => ({ id: doc.id, ...sanitizeObjectKeys(doc.data()) }));
+
+                if (completedContainer) {
+                    completedContainer.innerHTML = '';
+                    if (completedResults.length > 0) {
+                         completedResults.sort((a,b) => b.timestamp.toMillis() - a.timestamp.toMillis()).forEach((res, index) => {
+                            completedContainer.innerHTML += `<div class="flex flex-col sm:flex-row justify-between items-center text-center sm:text-right p-4 bg-white border rounded-lg gap-3 animate-stagger-item" style="animation-delay: ${index * 100}ms"><div class="flex-grow"><p class="font-bold">${allQuizzes[res.quizId]?.title || 'آزمون حذف شده'}</p><p class="text-sm text-gray-500 mt-1">تاریخ: ${new Date(res.timestamp.seconds * 1000).toLocaleDateString('fa-IR')} - درصد: ${res.percentage.toFixed(2)}%</p></div><div class="flex-shrink-0 mt-3 sm:mt-0"><button data-result-id="${res.id}" class="btn btn-primary text-sm py-1 px-3 view-report-btn">مشاهده کارنامه</button></div></div>`;
+                        });
+                        document.querySelectorAll('.view-report-btn').forEach(btn => btn.addEventListener('click', (e) => displayResults(completedResults.find(r => r.id === e.target.dataset.resultId), 'student')));
+                        if (completedResults.length > 1) {
+                            document.getElementById('progress-chart-container').classList.remove('hidden');
+                            
+                            const sortedResultsForChart = [...completedResults].sort((a,b) => a.timestamp.toMillis() - b.timestamp.toMillis());
+                            renderProgressChart(sortedResultsForChart.map(r => allQuizzes[r.quizId]?.title || 'آزمون'), sortedResultsForChart.map(r => r.percentage));
+                        }
+                    } else { completedContainer.innerHTML = '<p class="text-gray-500 animate-slide-up">هنوز در هیچ آزمونی شرکت نکرده‌اید.</p>'; }
+                }
+            }
+            
+            // --- 2. Prepare Available Quizzes and Packages ---
+            if(!availableQuizzesContainer || !tabsContainer || !availablePackagesContainer || !dotsContainer) return; // Check all containers
+
+            const completedSnapshot = await getDocs(query(collection(db, 'quiz_results'), where("userId", "==", currentUser.uid)));
+            const completedQuizIds = new Set(completedSnapshot.docs.map(r => r.data().quizId));
+            
+            const approvedQuizPayments = new Set(userPayments.filter(p => p.status === 'approved' && p.itemType === 'quiz').map(p => p.itemId));
+            const approvedPackagePayments = new Set(userPayments.filter(p => p.status === 'approved' && p.itemType === 'package').map(p => p.itemId));
+            
+            // Add quizzes from approved packages to the set of "owned" quizzes
+            approvedPackagePayments.forEach(pkgId => {
+                if (allPackages[pkgId]) {
+                    allPackages[pkgId].quizIds.forEach(quizId => approvedQuizPayments.add(quizId));
+                }
+            });
+
+            // --- 2.5. Render Packages ---
+            const packagesToRender = [];
+            Object.values(packagesToDisplay).forEach(pkg => {
+                if (!approvedPackagePayments.has(pkg.id)) { // Only show packages not already approved
+                    packagesToRender.push({ type: 'package', id: pkg.id, data: pkg });
+                }
+            });
+            
+            availablePackagesContainer.innerHTML = '';
+            if (packagesToRender.length > 0) {
+                 packagesToRender
+                    .sort((a, b) => (a.data.order ?? 999) - (b.data.order ?? 999))
+                    .forEach((item, index) => {
+                        availablePackagesContainer.innerHTML += renderPackageCard(item.id, item.data, index);
+                    });
+            } else {
+                availablePackagesContainer.innerHTML = (isSearch)
+                    ? '<p class="text-gray-500 animate-slide-up">هیچ پکیجی با این مشخصات یافت نشد.</p>'
+                    : '<p class="text-gray-500 animate-slide-up">پکیج جدیدی برای خرید وجود ندارد.</p>';
+            }
+
+
+            // --- 3. Group and Render Quizzes ---
+            const groupedQuizzes = {};
+            
+            // Add "Packages" as a special category
+            // const packageCategory = "پکیج‌ها"; // No longer needed as a tab
+            // groupedQuizzes[packageCategory] = []; // No longer needed as a tab
+            
+            // Object.values(packagesToDisplay).forEach(pkg => { // Logic moved up
+            //     if (!approvedPackagePayments.has(pkg.id)) { 
+            //         groupedQuizzes[packageCategory].push({ type: 'package', id: pkg.id, data: pkg });
+            //     }
+            // });
+            
+            // Group individual quizzes
+            Object.entries(quizzesToDisplay).forEach(([quizId, quizData]) => {
+                // Show quiz if it's not completed
+                if (!completedQuizIds.has(quizId)) {
+                    const category = quizData.category || 'آزمون‌های عمومی';
+                    if (!groupedQuizzes[category]) {
+                        groupedQuizzes[category] = [];
+                    }
+                    groupedQuizzes[category].push({ 
+                        type: 'quiz', 
+                        id: quizId, 
+                        data: quizData,
+                        isApproved: approvedQuizPayments.has(quizId) // Pass approval status
+                    });
+                }
+            });
+
+            // --- 3. Render Category Tabs ---
+            const categories = Object.keys(groupedQuizzes)
+                .filter(category => groupedQuizzes[category].length > 0) // Only show categories with items
+                .sort((a, b) => {
+                    // Make "Packages" always first if it exists
+                    // if (a === packageCategory) return -1; // No longer needed
+                    // if (b === packageCategory) return 1; // No longer needed
+                    // Sort other categories alphabetically (or by prefix number)
+                    return a.localeCompare(b, 'fa-IR');
+                });
+
+            tabsContainer.innerHTML = '';
+            if (dotsContainer) {
+                dotsContainer.innerHTML = '';
+                categories.forEach(category => {
+                    dotsContainer.innerHTML += `<div class="progress-dot" data-category-dot="${category}" title="${category}"></div>`;
+                });
+            }
+            if (categories.length === 0) {
+                 availableQuizzesContainer.innerHTML = (isSearch) // Changed from availableContainer
+                    ? '<p class="text-gray-500 animate-slide-up">هیچ آزمونی با این مشخصات یافت نشد.</p>'
+                    : '<p class="text-gray-500 animate-slide-up">آزمون جدیدی برای شرکت وجود ندارد.</p>';
+                // We must still attach listeners for packages, even if no quizzes are found
+                attachItemListeners();
+                return;
+            }
+            
+            categories.forEach(category => {
+                 tabsContainer.innerHTML += `<button class="tab-btn category-tab-btn" data-category="${category}">${category} (${groupedQuizzes[category].length})</button>`;
+            });
+
+            // --- 4. Render Items for the Active Tab ---
+            const renderItemsForCategory = (category) => {
+                // Deactivate all tabs
+                document.querySelectorAll('.category-tab-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelectorAll('.progress-dot').forEach(dot => dot.classList.remove('active'));
+                // Activate the clicked tab
+                const activeTab = document.querySelector(`.category-tab-btn[data-category="${category}"]`);
+                if (activeTab) activeTab.classList.add('active');
+                // Activate the clicked dot
+                const activeDot = document.querySelector(`.progress-dot[data-category-dot="${category}"]`);
+                if (activeDot) activeDot.classList.add('active');
+
+                availableQuizzesContainer.innerHTML = ''; // Changed from availableContainer
+                
+                const itemsInCategory = groupedQuizzes[category]
+                    .sort((a, b) => (a.data.order ?? 999) - (b.data.order ?? 999)); // Sort by order field
+
+                if (itemsInCategory.length === 0) {
+                     availableQuizzesContainer.innerHTML = '<p class="text-gray-500 animate-slide-up">موردی در این دسته یافت نشد.</p>'; // Changed from availableContainer
+                     return;
+                }
+
+                itemsInCategory.forEach((item, index) => {
+                    let itemHtml = '';
+                    if (item.type === 'quiz') {
+                        itemHtml = renderQuizCard(item.id, item.data, index, item.isApproved); // Pass isApproved
+                    } 
+                    // This part is no longer needed, packages are rendered separately
+                    // else if (item.type === 'package') {
+                    //     itemHtml = renderPackageCard(item.id, item.data, index);
+                    // }
+                    availableQuizzesContainer.innerHTML += itemHtml; // Changed from availableContainer
+                });
+                
+                // Re-attach event listeners for the newly rendered buttons
+                attachItemListeners();
+            };
+
+            // Attach tab click listeners
+            document.querySelectorAll('.category-tab-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => renderItemsForCategory(e.currentTarget.dataset.category));
+            });
+
+            // Attach dot click listeners
+            document.querySelectorAll('.progress-dot').forEach(dot => {
+                dot.addEventListener('click', (e) => renderItemsForCategory(e.currentTarget.dataset.categoryDot));
+            });
+
+            // Automatically click the first tab
+            if (categories.length > 0) {
+                renderItemsForCategory(categories[0]);
+            } else {
+                // If no categories, still attach listeners for packages
+                attachItemListeners();
+            }
+        }
+        
+        // Helper function to attach listeners for both quizzes and packages
+        function attachItemListeners() {
+            document.querySelectorAll('.start-quiz-btn').forEach(btn => btn.addEventListener('click', (e) => startQuiz(e.currentTarget.dataset.quizId)));
+            document.querySelectorAll('.pay-item-btn').forEach(btn => btn.addEventListener('click', (e) => handlePayment(e.currentTarget.dataset.itemId, e.currentTarget.dataset.itemType)));
+        }
+        
+        function getPaymentStatusButton(itemType, itemId) {
+             const payment = userPayments.find(p => p.itemId === itemId && p.itemType === itemType);
+             if (payment?.status === 'pending') {
+                 return `<button class="btn btn-primary" disabled>در انتظار تایید</button>`;
+             }
+             return null; // No pending payment
+        }
+
+        function renderQuizCard(quizId, quizData, index, isApproved) { // Added isApproved
+            const isQuizActive = quizSettings[quizId]?.isActive !== false;
+            const currentPrice = quizSettings[quizId]?.price ?? quizData.price;
+            
+            let buttonHtml = getPaymentStatusButton('quiz', quizId); // Check for pending payment
+            
+            if (!buttonHtml) { // If no pending payment
+                if (!isQuizActive) {
+                    buttonHtml = `<button class="btn bg-gray-400 cursor-not-allowed" disabled>غیرفعال</button>`;
+                } else if (isApproved || currentPrice === 0) { // FIX: Show start if approved OR free
+                    buttonHtml = `<button data-quiz-id="${quizId}" class="btn btn-primary start-quiz-btn">شروع آزمون</button>`;
+                } else {
+                    buttonHtml = `<button data-item-id="${quizId}" data-item-type="quiz" class="btn bg-green-600 hover:bg-green-700 pay-item-btn">${currentPrice.toLocaleString('fa-IR')} تومان - پرداخت</button>`;
+                }
+            }
+            
+            const topicsHtml = quizData.topics ? `<div class="flex flex-wrap justify-center sm:justify-start gap-1 mt-2">${quizData.topics.map(topic => `<span class="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded-full">${topic}</span>`).join('')}</div>` : '';
+            
+            return `<div class="flex flex-col sm:flex-row justify-between items-center text-center sm:text-right p-4 border rounded-lg gap-3 transition-all bg-white animate-stagger-item" style="animation-delay: ${index * 50}ms">
+                        <div class="flex-grow">
+                            <p class="font-bold">${quizData.title}</p>
+                            ${topicsHtml}
+                        </div>
+                        <div class="flex-shrink-0 mt-3 sm:mt-0">
+                            ${buttonHtml}
+                        </div>
+                    </div>`;
+        }
+        
+        function renderPackageCard(pkgId, pkgData, index) {
+            let buttonHtml = getPaymentStatusButton('package', pkgId); // Check for pending payment
+            
+            if (!buttonHtml) { // If no pending payment, show pay button
+                 buttonHtml = `<button data-item-id="${pkgId}" data-item-type="package" class="btn bg-green-600 hover:bg-green-700 pay-item-btn">${pkgData.price.toLocaleString('fa-IR')} تومان - پرداخت</button>`;
+            }
+            
+            const quizzesInPkgHtml = pkgData.quizIds.map(quizId => {
+                const quiz = allQuizzes[quizId];
+                return quiz ? `<span class="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded-full">${quiz.title}</span>` : '';
+            }).join('');
+
+            return `<div class="flex flex-col sm:flex-row justify-between items-center text-center sm:text-right p-4 border-2 border-purple-400 rounded-lg gap-3 transition-all bg-purple-50 animate-stagger-item" style="animation-delay: ${index * 50}ms">
+                        <div class="flex-grow">
+                            <p class="font-bold text-lg text-purple-800">${pkgData.title}</p>
+                            <p class="text-sm text-gray-600 my-2">شامل آزمون‌های:</p>
+                            <div class="flex flex-wrap justify-center sm:justify-start gap-1 mt-2">
+                                ${quizzesInPkgHtml}
+                            </div>
+                        </div>
+                        <div class="flex-shrink-0 mt-3 sm:mt-0">
+                            ${buttonHtml}
+                        </div>
+                    </div>`;
+        }
+        
+        // --- CHARTING FUNCTIONS ---
+        function renderProgressChart(labels, data) {
+            const ctx = document.getElementById('progressChart')?.getContext('2d');
+            if (!ctx) return;
+            if (progressChartInstance) progressChartInstance.destroy();
+
+            const gradient = ctx.createLinearGradient(0, 0, 0, ctx.canvas.height);
+            gradient.addColorStop(0, 'rgba(139, 92, 246, 0.5)');   
+            gradient.addColorStop(1, 'rgba(139, 92, 246, 0)');
+
+            progressChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'درصد کسب شده',
+                        data,
+                        borderColor: '#8b5cf6',
+                        backgroundColor: gradient,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#8b5cf6',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 8,
+                        pointHoverBackgroundColor: '#8b5cf6',
+                        pointHoverBorderColor: '#fff',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            grid: {
+                                color: '#e5e7eb',
+                                drawBorder: false,
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false,
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: '#4c1d95',
+                            titleFont: { family: 'Vazirmatn', size: 14, weight: 'bold' },
+                            bodyFont: { family: 'Vazirmatn', size: 12 },
+                            padding: 12,
+                            boxPadding: 4,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(context) {
+                                    return ` درصد: ${context.formattedValue}%`;
+                                }
+                            }
+                        }
+                    },
+                     animation: {
+                        duration: 1000,
+                        easing: 'easeInOutCubic'
+                    }
+                }
+            });
+        }
+        
+        function renderResultPieChart(resultData) {
+            const ctx = document.getElementById('resultPieChart')?.getContext('2d');
+            if (!ctx) return;
+            if (resultPieChartInstance) resultPieChartInstance.destroy();
+
+            // Create Gradients
+            const greenGradient = ctx.createLinearGradient(0, 0, 0, 300);
+            greenGradient.addColorStop(0, 'rgba(16, 185, 129, 1)');
+            greenGradient.addColorStop(1, 'rgba(110, 231, 183, 1)');
+
+            const redGradient = ctx.createLinearGradient(0, 0, 0, 300);
+            redGradient.addColorStop(0, 'rgba(239, 68, 68, 1)');
+            redGradient.addColorStop(1, 'rgba(252, 165, 165, 1)');
+
+            const grayGradient = ctx.createLinearGradient(0, 0, 0, 300);
+            grayGradient.addColorStop(0, 'rgba(107, 114, 128, 1)');
+            grayGradient.addColorStop(1, 'rgba(209, 213, 219, 1)');
+            
+            const doughnutLabel = {
+              id: 'doughnutLabel',
+              beforeDraw(chart, args, options) {
+                const { ctx, chartArea: { top, width, height } } = chart;
+                ctx.save();
+                ctx.font = 'bold 2.5rem Vazirmatn';
+                ctx.fillStyle = '#4c1d95'; // Dark purple
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                const text = `${resultData.percentage.toFixed(1)}%`;
+                ctx.fillText(text, width / 2, height / 2 + top - 5);
+                
+                ctx.font = '500 1rem Vazirmatn';
+                ctx.fillStyle = '#4b5563';
+                ctx.fillText('درصد کل', width / 2, height / 2 + top + 30);
+                ctx.restore();
+              }
+            };
+
+            resultPieChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: [`صحیح (${resultData.correct})`, `غلط (${resultData.incorrect})`, `بی‌پاسخ (${resultData.unanswered})`],
+                    datasets: [{ 
+                        data: [resultData.correct, resultData.incorrect, resultData.unanswered], 
+                        backgroundColor: [greenGradient, redGradient, grayGradient],
+                        hoverOffset: 12,
+                        borderColor: 'rgba(255, 255, 255, 0.8)',
+                        borderWidth: 4,
+                    }]
+                },
+                plugins: [doughnutLabel],
+                options: {
+                    responsive: true,
+                    cutout: '70%',
+                    plugins: {
+                        legend: { 
+                            position: 'bottom',
+                             labels: {
+                                font: { family: 'Vazirmatn', size: 14 },
+                                boxWidth: 20,
+                                padding: 20,
+                            }
+                        },
+                        tooltip: {
+                            bodyFont: { family: 'Vazirmatn' },
+                            titleFont: { family: 'Vazirmatn' },
+                            padding: 12,
+                            boxPadding: 4,
+                        }
+                    },
+                    animation: {
+                        animateScale: true,
+                        animateRotate: true,
+                        duration: 1500,
+                        easing: 'easeInOutCubic',
+                    }
+                }
+            });
+        }
+        
+        // --- ADMIN DASHBOARD LOGIC ---
+        let allAdminResults = [];
+        let resultsCurrentPage = 1;
+        const resultsPerPage = 10;
+        let allApprovedPayments = [];
+        let approvedPaymentsCurrentPage = 1;
+        const paymentsPerPage = 10; // Increased for better overview
+
+        function handleAdminTabChange(tabName) {
+            document.querySelectorAll('.admin-tab-btn').forEach(btn => btn.classList.remove('active'));
+            const activeBtn = document.querySelector(`.admin-tab-btn[data-tab="${tabName}"]`);
+            if (activeBtn) activeBtn.classList.add('active');
+            const contentEl = document.getElementById('admin-content');
+            contentEl.innerHTML = `<div class="flex justify-center items-center h-full"><div class="loading-dots"><span></span><span></span><span></span></div></div>`;
+            if (unsubscribeAdminListener) unsubscribeAdminListener();
+            
+            const tabRenderMap = {
+                results: { html: `<div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6"><h1 class="text-2xl font-bold text-gray-800">تحلیل نتایج</h1><div class="flex gap-2 w-full md:w-auto"><select id="quiz-filter" class="input-field w-full"></select><div class="relative w-full"><input type="text" id="admin-result-search" class="input-field !pl-10" placeholder="جستجوی دانشجو..."><span class="absolute inset-y-0 left-0 flex items-center pl-3"><svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg></span></div></div></div><div id="admin-stats-cards" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6"></div><div class="bg-white rounded-xl shadow-md overflow-hidden md:bg-transparent md:rounded-none md:shadow-none"><div class="overflow-x-auto"><table class="w-full text-sm text-right text-gray-600 responsive-table"><thead class="text-xs text-gray-700 uppercase bg-gray-100 hidden md:table-header-group"><tr><th class="px-6 py-4">رتبه</th><th class="px-6 py-4">نام</th><th class="px-6 py-4">درصد</th><th class="px-6 py-4">کلیک</th><th class="px-6 py-4">کارنامه</th></tr></thead><tbody id="results-table-body" class="divide-y divide-gray-200 block md:table-row-group"></tbody></table></div><div id="results-pagination-container" class="flex justify-center items-center p-4 space-x-2 rtl:space-x-reverse"></div></div><div class="mt-8"><h2 class="text-2xl font-bold text-gray-800 mb-4">تحلیل سوالات</h2><div id="question-analysis-container" class="space-y-6 bg-white rounded-xl shadow-md p-6"></div></div>`, listener: listenForAdminResults },
+                payments: { html: `<div class="flex justify-between items-center mb-4"><h1 class="text-2xl font-bold text-gray-800">مدیریت پرداخت‌ها</h1></div><div class="border-b border-gray-200 mb-6"><nav class="-mb-px flex space-x-4 rtl:space-x-reverse" aria-label="Tabs"><button data-subtab="pending" class="payment-subtab-btn whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm">در انتظار تایید</button><button data-subtab="approved" class="payment-subtab-btn whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm">تایید شده ها</button></nav></div><div id="pending-payments-container" class="space-y-3"></div><div id="approved-payments-section" class="hidden"><div class="relative mb-4"><input type="text" id="approved-payment-search" class="input-field !pl-10" placeholder="جستجوی دانشجو بر اساس نام یا ایمیل..."><span class="absolute inset-y-0 left-0 flex items-center pl-3"><svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg></span></div><div class="bg-white rounded-xl shadow-md overflow-hidden md:bg-transparent md:rounded-none md:shadow-none"><div class="overflow-x-auto"><table class="w-full text-sm text-right text-gray-600 responsive-table"><thead class="text-xs text-gray-700 uppercase bg-gray-100 hidden md:table-header-group"><tr><th class="px-6 py-4">نام</th><th class="px-6 py-4">مورد</th><th class="px-6 py-4">مبلغ</th><th class="px-6 py-4">۴ رقم آخر</th><th class="px-6 py-4">تاریخ</th></tr></thead><tbody id="approved-payments-container" class="divide-y divide-gray-200 block md:table-row-group"></tbody></table></div></div><div id="pagination-container" class="flex justify-center items-center mt-6 space-x-2 rtl:space-x-reverse"></div></div>`, listener: listenForAdminPayments },
+                quiz_management: { html: `<div class="flex justify-between items-center mb-6"><h1 class="text-2xl font-bold text-gray-800">فعال/غیرفعال کردن آزمون‌ها</h1></div><div id="quiz-management-container" class="space-y-3"></div>`, renderer: renderAdminQuizManagement },
+                package_management: { html: `<div class="flex justify-between items-center mb-6"><h1 class="text-2xl font-bold text-gray-800">مدیریت پکیج‌ها</h1></div><div id="admin-packages-container"></div>`, renderer: renderAdminPackageManagement },
+                discounts: { html: `<div class="flex justify-between items-center mb-6"><h1 class="text-2xl font-bold text-gray-800">مدیریت کدهای تخفیف</h1></div><div id="admin-discounts-container"></div>`, renderer: renderAdminDiscounts },
+                prices: { html: `<div class="flex justify-between items-center mb-6"><h1 class="text-2xl font-bold text-gray-800">مدیریت قیمت آزمون‌ها</h1></div><div id="admin-prices-container" class="space-y-3"></div>`, renderer: renderAdminPriceManagement }
+            };
+            
+            const tab = tabRenderMap[tabName];
+            if (tab) {
+                contentEl.innerHTML = tab.html;
+                if (tab.listener) tab.listener();
+                else if (tab.renderer) tab.renderer();
+            }
+        }
+        
+        function renderAdminQuizManagement() {
+            const container = document.getElementById('quiz-management-container');
+            if (!container) return;
+            container.innerHTML = Object.entries(allQuizzes).map(([quizId, quizData], index) => `<div class="flex justify-between items-center p-4 bg-white border rounded-lg animate-stagger-item" style="animation-delay: ${index * 50}ms"><p class="font-bold">${quizData.title}</p><div class="flex items-center"><span class="w-16 text-center text-sm font-bold transition-colors ${quizSettings[quizId]?.isActive !== false ? 'text-green-600' : 'text-red-600'} status-label">${quizSettings[quizId]?.isActive !== false ? 'فعال' : 'غیرفعال'}</span><label class="relative inline-flex items-center cursor-pointer ml-3"><input type="checkbox" class="sr-only peer quiz-status-toggle" data-quiz-id="${quizId}" ${quizSettings[quizId]?.isActive !== false ? 'checked' : ''}><div class="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-purple-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div></label></div></div>`).join('');
+            document.querySelectorAll('.quiz-status-toggle').forEach(toggle => toggle.addEventListener('change', handleQuizStatusChange));
+        }
+        
+        async function handleQuizStatusChange(e) {
+            const quizId = e.target.dataset.quizId, newStatus = e.target.checked;
+            const label = e.target.closest('.flex.items-center').querySelector('.status-label');
+            if (label) { label.textContent = newStatus ? 'فعال' : 'غیرفعال'; label.classList.toggle('text-green-600', newStatus); label.classList.toggle('text-red-600', !newStatus); }
+            try { await setDoc(doc(db, 'quiz_settings', quizId), { isActive: newStatus }, { merge: true }); } 
+            catch (error) { console.error("Error updating quiz status:", error); showToast('خطا در به‌روزرسانی وضعیت آزمون.', 'error'); e.target.checked = !newStatus; if (label) { label.textContent = !newStatus ? 'فعال' : 'غیرفعال'; label.classList.toggle('text-green-600', !newStatus); label.classList.toggle('text-red-600', newStatus); } }
+        }
+
+        function renderAdminPriceManagement() {
+            const container = document.getElementById('admin-prices-container');
+            if (!container) return;
+            container.innerHTML = Object.entries(allQuizzes).map(([quizId, quizData], index) => `<div class="flex flex-col sm:flex-row justify-between items-center p-4 bg-white border rounded-lg gap-3 animate-stagger-item" style="animation-delay: ${index * 50}ms"><p class="font-bold flex-grow">${quizData.title}</p><div class="flex items-center gap-2"><input type="number" value="${quizSettings[quizId]?.price ?? quizData.price}" data-quiz-id="${quizId}" class="input-field !w-32 text-center price-input" placeholder="قیمت (تومان)"><button data-quiz-id="${quizId}" class="btn btn-primary px-4 save-price-btn">ذخیره</button></div></div>`).join('');
+            document.querySelectorAll('.save-price-btn').forEach(btn => btn.addEventListener('click', handlePriceUpdate));
+        }
+
+        async function handlePriceUpdate(e) {
+            const quizId = e.target.dataset.quizId;
+            const newPrice = parseInt(document.querySelector(`.price-input[data-quiz-id="${quizId}"]`).value);
+            if (isNaN(newPrice) || newPrice < 0) { showToast('لطفا یک قیمت معتبر وارد کنید.', 'error'); return; }
+            toggleButtonLoading(e.target, true, 'ذخیره');
+            try { 
+                await setDoc(doc(db, 'quiz_settings', quizId), { price: newPrice }, { merge: true }); 
+                showToast('قیمت با موفقیت به‌روزرسانی شد.', 'success');
+            } 
+            catch (error) { console.error("Error updating price:", error); showToast('خطا در به‌روزرسانی قیمت.', 'error'); } 
+            finally { toggleButtonLoading(e.target, false, 'ذخیره'); }
+        }
+
+        function renderAdminDiscounts() {
+            const container = document.getElementById('admin-discounts-container');
+            if (!container) return;
+            container.innerHTML = `<div class="p-6 bg-white border rounded-lg mb-6 animate-slide-up"><h3 class="text-lg font-bold mb-4">ایجاد کد تخفیف جدید</h3><form id="create-discount-form" class="space-y-4"><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label for="discount-code" class="block text-sm font-medium text-gray-700">کد تخفیف (مثال: BAHAR1405)</label><input type="text" id="discount-code" class="input-field mt-1" required></div><div><label for="discount-percentage" class="block text-sm font-medium text-gray-700">درصد تخفیف (مثال: 20)</label><input type="number" id="discount-percentage" class="input-field mt-1" min="1" max="100" required></div></div><div><p class="block text-sm font-medium text-gray-700 mb-2">آزمون‌های مورد نظر را انتخاب کنید:</p><div class="grid grid-cols-2 sm:grid-cols-3 gap-2">${Object.entries(allQuizzes).map(([quizId, quizData]) => `<label class="flex items-center space-x-2 rtl:space-x-reverse"><input type="checkbox" name="applicableQuizzes" value="${quizId}" class="form-checkbox h-4 w-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"><span>${quizData.title}</span></label>`).join('')}</div></div><div><p class="block text-sm font-medium text-gray-700 mb-2">پکیج‌های مورد نظر را انتخاب کنید:</p><div class="grid grid-cols-2 sm:grid-cols-3 gap-2">${Object.values(allPackages).map((pkg) => `<label class="flex items-center space-x-2 rtl:space-x-reverse"><input type="checkbox" name="applicablePackages" value="${pkg.id}" class="form-checkbox h-4 w-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"><span>${pkg.title}</span></label>`).join('')}</div></div><div class="text-left"><button type="submit" class="btn btn-primary">ایجاد کد</button></div></form></div><div><h3 class="text-lg font-bold mb-4">کدهای تخفیف موجود</h3><div id="existing-discounts-list" class="space-y-3"></div></div>`;
+            const listContainer = document.getElementById('existing-discounts-list');
+            if (discounts.length > 0) listContainer.innerHTML = discounts.map((d, index) => {
+                const quizCount = d.applicableQuizzes?.length || 0;
+                const packageCount = d.applicablePackages?.length || 0;
+                let applicableText = '';
+                if (quizCount > 0) applicableText += `${quizCount} آزمون`;
+                if (quizCount > 0 && packageCount > 0) applicableText += ' و ';
+                if (packageCount > 0) applicableText += `${packageCount} پکیج`;
+                if (quizCount === 0 && packageCount === 0) applicableText = 'هیچ موردی';
+
+                return `<div class="p-4 bg-gray-50 border rounded-lg flex justify-between items-center animate-stagger-item" style="animation-delay: ${index * 50}ms"><div><p class="font-mono font-bold text-purple-600">${d.code}</p><p class="text-sm text-gray-600">${d.percentage}% تخفیف برای ${applicableText}</p></div><button data-discount-id="${d.id}" class="btn bg-red-500 hover:bg-red-600 text-sm py-1 px-3 delete-discount-btn">حذف</button></div>`
+            }).join('');
+            else listContainer.innerHTML = '<p class="text-gray-500">هیچ کد تخفیفی وجود ندارد.</p>';
+            document.getElementById('create-discount-form').addEventListener('submit', handleCreateDiscount);
+            document.querySelectorAll('.delete-discount-btn').forEach(btn => btn.addEventListener('click', handleDeleteDiscount));
+        }
+
+        async function handleCreateDiscount(e) {
+            e.preventDefault();
+            const code = document.getElementById('discount-code').value.trim().toUpperCase();
+            const percentage = parseInt(document.getElementById('discount-percentage').value);
+            const applicableQuizzes = Array.from(document.querySelectorAll('input[name="applicableQuizzes"]:checked')).map(cb => cb.value);
+            const applicablePackages = Array.from(document.querySelectorAll('input[name="applicablePackages"]:checked')).map(cb => cb.value); // New
+            
+            if (!code || !percentage || (applicableQuizzes.length === 0 && applicablePackages.length === 0)) { 
+                showToast('لطفا تمام فیلدها را پر کنید و حداقل یک آزمون یا پکیج انتخاب نمایید.', 'error'); 
+                return; 
+            }
+            try { 
+                await addDoc(collection(db, 'discount_codes'), { code, percentage, applicableQuizzes, applicablePackages }); // Updated
+                e.target.reset(); 
+                showToast('کد تخفیف با موفقیت ایجاد شد.', 'success'); 
+            } 
+            catch (error) { console.error("Error creating discount:", error); showToast('خطا در ایجاد کد تخفیف.', 'error'); }
+        }
+
+        async function handleDeleteDiscount(e) {
+            const discountId = e.target.dataset.discountId;
+            showModal('تایید حذف', 'آیا از حذف این کد تخفیف مطمئن هستید؟', 'بله، حذف کن', 'انصراف', async () => {
+                try { 
+                    await deleteDoc(doc(db, 'discount_codes', discountId)); 
+                    showToast('کد تخفیف حذف شد.', 'success');
+                } 
+                catch (error) { console.error("Error deleting discount:", error); showToast('خطا در حذف کد.', 'error'); }
+            });
+        }
+        
+        // New Package Management Functions
+        function renderAdminPackageManagement() {
+            const container = document.getElementById('admin-packages-container');
+            if (!container) return;
+            container.innerHTML = `<div class="p-6 bg-white border rounded-lg mb-6 animate-slide-up"><h3 class="text-lg font-bold mb-4">ایجاد پکیج جدید</h3><form id="create-package-form" class="space-y-4"><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label for="package-name" class="block text-sm font-medium text-gray-700">نام پکیج</label><input type="text" id="package-name" class="input-field mt-1" required></div><div><label for="package-price" class="block text-sm font-medium text-gray-700">قیمت پکیج (تومان)</label><input type="number" id="package-price" class="input-field mt-1" min="0" required></div></div><div><p class="block text-sm font-medium text-gray-700 mb-2">آزمون‌های مورد نظر را برای پکیج انتخاب کنید:</p><div class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-40 overflow-y-auto p-2 bg-gray-50 rounded border">${Object.entries(allQuizzes).sort(([,a],[,b]) => (a.order ?? 999) - (b.order ?? 999)).map(([quizId, quizData]) => `<label class="flex items-center space-x-2 rtl:space-x-reverse"><input type="checkbox" name="packageQuizzes" value="${quizId}" class="form-checkbox h-4 w-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"><span>${quizData.title}</span></label>`).join('')}</div></div><div class="text-left"><button type="submit" id="create-package-btn" class="btn btn-primary">ایجاد پکیج</button></div></form></div><div><h3 class="text-lg font-bold mb-4">پکیج‌های موجود</h3><div id="existing-packages-list" class="space-y-3"></div></div>`;
+            
+            const listContainer = document.getElementById('existing-packages-list');
+            const packages = Object.values(allPackages);
+            if (packages.length > 0) {
+                listContainer.innerHTML = packages.map((pkg, index) => `
+                <div class="p-4 bg-gray-50 border rounded-lg flex justify-between items-center animate-stagger-item" style="animation-delay: ${index * 50}ms">
+                    <div>
+                        <p class="font-bold text-purple-600">${pkg.title}</p>
+                        <p class="text-sm text-gray-600">${pkg.price.toLocaleString('fa-IR')} تومان - شامل ${pkg.quizIds.length} آزمون</p>
+                    </div>
+                    <button data-package-id="${pkg.id}" class="btn bg-red-500 hover:bg-red-600 text-sm py-1 px-3 delete-package-btn">حذف</button>
+                </div>`).join('');
+            } else {
+                listContainer.innerHTML = '<p class="text-gray-500">هیچ پکیجی وجود ندارد.</p>';
+            }
+
+            document.getElementById('create-package-form').addEventListener('submit', handleCreatePackage);
+            document.querySelectorAll('.delete-package-btn').forEach(btn => btn.addEventListener('click', handleDeletePackage));
+        }
+
+        async function handleCreatePackage(e) {
+            e.preventDefault();
+            const title = document.getElementById('package-name').value.trim();
+            const price = parseInt(document.getElementById('package-price').value);
+            const quizIds = Array.from(document.querySelectorAll('input[name="packageQuizzes"]:checked')).map(cb => cb.value);
+            
+            if (!title || isNaN(price) || quizIds.length === 0) {
+                showToast('لطفا تمام فیلدها را پر کنید و حداقل یک آزمون انتخاب نمایید.', 'error');
+                return;
+            }
+            
+            const submitBtn = document.getElementById('create-package-btn');
+            toggleButtonLoading(submitBtn, true, 'ایجاد پکیج');
+            
+            try {
+                await addDoc(collection(db, 'quiz_packages'), { title, price, quizIds });
+                e.target.reset();
+                showToast('پکیج با موفقیت ایجاد شد.', 'success');
+            } catch (error) {
+                console.error("Error creating package:", error);
+                showToast('خطا در ایجاد پکیج.', 'error');
+            } finally {
+                toggleButtonLoading(submitBtn, false, 'ایجاد پکیج');
+            }
+        }
+        
+        async function handleDeletePackage(e) {
+            const packageId = e.target.dataset.packageId;
+            showModal('تایید حذف', 'آیا از حذف این پکیج مطمئن هستید؟ این عمل قابل بازگشت نیست.', 'بله، حذف کن', 'انصراف', async () => {
+                try {
+                    await deleteDoc(doc(db, 'quiz_packages', packageId));
+                    showToast('پکیج با موفقیت حذف شد.', 'success');
+                } catch (error) {
+                    console.error("Error deleting package:", error);
+                    showToast('خطا در حذف پکیج.', 'error');
+                }
+            });
+        }
+
+
+        async function handleApplyDiscount(itemId, itemType, originalPrice, finalPrice) {
+            const code = document.getElementById('discount-code-input').value.trim().toUpperCase();
+            const feedbackEl = document.getElementById('discount-feedback'), amountEl = document.getElementById('payment-amount');
+            
+            if (!code) { feedbackEl.textContent = 'لطفا یک کد وارد کنید.'; feedbackEl.className = 'text-sm mt-2 h-5 text-red-500'; return; }
+            
+            /* REMOVED THIS BLOCK
+            if(itemType === 'package') {
+                feedbackEl.textContent = 'کد تخفیف برای پکیج‌ها قابل استفاده نیست.';
+                feedbackEl.className = 'text-sm mt-2 h-5 text-red-500';
+                return;
+            }
+            */
+
+            try {
+                const querySnapshot = await getDocs(query(collection(db, 'discount_codes'), where("code", "==", code)));
+                if (querySnapshot.empty) { throw new Error('نامعتبر'); }
+                
+                const discountDoc = querySnapshot.docs[0].data();
+                
+                // New validation logic for both quizzes and packages
+                let isValid = false;
+                if (itemType === 'quiz' && discountDoc.applicableQuizzes?.includes(itemId)) {
+                    isValid = true;
+                } else if (itemType === 'package' && discountDoc.applicablePackages?.includes(itemId)) {
+                    isValid = true;
+                }
+                
+                if (isValid) {
+                    // Apply discount on the finalPrice (which already accounts for owned quizzes)
+                    const newPrice = finalPrice * (1 - discountDoc.percentage / 100);
+                    amountEl.innerHTML = `<span class="line-through text-gray-500 text-2xl">${finalPrice.toLocaleString('fa-IR')}</span> ${Math.round(newPrice).toLocaleString('fa-IR')} تومان`;
+                    feedbackEl.textContent = `تخفیف ${discountDoc.percentage}% با موفقیت اعمال شد.`;
+                    feedbackEl.className = 'text-sm mt-2 h-5 text-green-600';
+                    
+                    // Update finalPrice for submission
+                    document.getElementById('proceed-to-submit-btn').addEventListener('click', () => {
+                         renderView('paymentSubmission', { itemId, itemType, finalPrice: Math.round(newPrice) });
+                    });
+                    
+                } else { throw new Error('برای این مورد معتبر نیست'); }
+            } catch (error) {
+                feedbackEl.textContent = error.message.includes('نامعتبر') ? 'کد تخفیف نامعتبر است.' : 'این کد برای آزمون یا پکیج انتخاب شده معتبر نیست.';
+                feedbackEl.className = 'text-sm mt-2 h-5 text-red-500';
+                amountEl.textContent = `${finalPrice.toLocaleString('fa-IR')} تومان`; // Revert to price without discount
+                console.error("Error applying discount:", error);
+            }
+        }
+
+        function listenForAdminPayments() {
+            unsubscribeAdminListener = onSnapshot(collection(db, 'payments'), (snapshot) => {
+                const pendingContainer = document.getElementById('pending-payments-container');
+                const approvedContainer = document.getElementById('approved-payments-container');
+                if(!pendingContainer || !approvedContainer) return;
+
+                const allPayments = snapshot.docs.map(doc => ({ id: doc.id, ...sanitizeObjectKeys(doc.data()) }));
+                
+                const pendingPayments = allPayments.filter(p => p.status === 'pending');
+                 pendingPayments.sort((a, b) => a.timestamp.toMillis() - b.timestamp.toMillis());
+                
+                if (pendingPayments.length === 0) {
+                    pendingContainer.innerHTML = '<p class="text-gray-500">هیچ پرداخت در انتظار تاییدی وجود ندارد.</p>';
+                } else {
+                    pendingContainer.innerHTML = pendingPayments.map((payment, index) => {
+                        return `
+                        <div id="payment-${payment.id}" class="p-4 bg-white border rounded-lg space-y-2 sm:grid sm:grid-cols-5 sm:gap-4 sm:items-center sm:space-y-0 animate-stagger-item" style="animation-delay: ${index * 50}ms">
+                            <div><p class="font-bold">${payment.userName}</p><p class="text-xs text-gray-500">${payment.userEmail}</p></div>
+                            <div><p class="font-semibold ${payment.itemType === 'package' ? 'text-purple-600' : ''}">${payment.itemTitle}</p></div>
+                            <div><p class="font-semibold text-green-700">${(payment.finalPrice ?? 0).toLocaleString('fa-IR')} تومان</p></div>
+                            <div><p class="text-sm font-mono" title="چهار رقم آخر کارت">${payment.lastFourDigits || 'N/A'}</p></div>
+                            <div class="pt-2 sm:pt-0 sm:text-left"><button data-payment-id="${payment.id}" class="btn bg-green-500 hover:bg-green-600 approve-payment-btn text-sm py-1 px-3 w-full sm:w-auto">تایید</button></div>
+                        </div>`
+                    }).join('');
+                    document.querySelectorAll('.approve-payment-btn').forEach(btn => btn.addEventListener('click', handleApprovePayment));
+                }
+
+                allApprovedPayments = allPayments.filter(p => p.status === 'approved');
+                approvedPaymentsCurrentPage = 1; 
+                renderApprovedPayments();
+
+                const searchInput = document.getElementById('approved-payment-search');
+                if (searchInput) {
+                    searchInput.removeEventListener('input', () => { approvedPaymentsCurrentPage = 1; renderApprovedPayments(); });
+                    searchInput.addEventListener('input', () => { approvedPaymentsCurrentPage = 1; renderApprovedPayments(); });
+                }
+                
+                document.querySelectorAll('.payment-subtab-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.payment-subtab-btn').forEach(b => b.classList.remove('active'));
+                        e.currentTarget.classList.add('active');
+                        
+                        const subtab = e.currentTarget.dataset.subtab;
+                        const approvedSection = document.getElementById('approved-payments-section');
+
+                        if (subtab === 'pending') {
+                            pendingContainer.classList.remove('hidden');
+                            approvedSection.classList.add('hidden');
+                        } else {
+                            pendingContainer.classList.add('hidden');
+                            approvedSection.classList.remove('hidden');
+                            renderApprovedPayments(); 
+                        }
+                    });
+                });
+
+                if (!document.querySelector('.payment-subtab-btn.active')) {
+                     document.querySelector('.payment-subtab-btn[data-subtab="pending"]').classList.add('active');
+                }
+            });
+        }
+        
+        async function handleApprovePayment(e) {
+            const btn = e.target;
+            const paymentId = btn.dataset.paymentId;
+            const paymentCard = document.getElementById(`payment-${paymentId}`);
+
+            toggleButtonLoading(btn, true, 'تایید');
+            try {
+                await updateDoc(doc(db, 'payments', paymentId), { status: 'approved' });
+                showToast('پرداخت با موفقیت تایید شد.', 'success');
+                if (paymentCard) {
+                    paymentCard.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                    paymentCard.style.opacity = '0';
+                    paymentCard.style.transform = 'translateX(-20px)';
+                    setTimeout(() => {
+                        paymentCard.remove();
+                        const pendingContainer = document.getElementById('pending-payments-container');
+                        if (pendingContainer && pendingContainer.children.length === 0) {
+                            pendingContainer.innerHTML = '<p class="text-gray-500">هیچ پرداخت در انتظار تاییدی وجود ندارد.</p>';
+                        }
+                    }, 500);
+                }
+            }
+            catch (error) { 
+                console.error("Error approving payment:", error); 
+                showToast("خطا در تایید پرداخت.", 'error'); 
+                toggleButtonLoading(btn, false, 'تایید'); 
+            }
+        }
+        
+        function renderApprovedPayments() {
+            const approvedContainer = document.getElementById('approved-payments-container');
+            const paginationContainer = document.getElementById('pagination-container');
+            const searchInput = document.getElementById('approved-payment-search');
+            if (!approvedContainer || !paginationContainer || !searchInput) return;
+
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            
+            let filteredPayments = allApprovedPayments.filter(payment => {
+                return payment.userName.toLowerCase().includes(searchTerm) || payment.userEmail.toLowerCase().includes(searchTerm);
+            });
+            
+            filteredPayments.sort((a,b) => b.timestamp.toMillis() - a.timestamp.toMillis());
+
+            const totalPages = Math.ceil(filteredPayments.length / paymentsPerPage);
+            if(approvedPaymentsCurrentPage > totalPages && totalPages > 0) {
+                approvedPaymentsCurrentPage = totalPages;
+            } else if (totalPages === 0) {
+                approvedPaymentsCurrentPage = 1;
+            }
+
+            const start = (approvedPaymentsCurrentPage - 1) * paymentsPerPage;
+            const end = start + paymentsPerPage;
+            const paginatedPayments = filteredPayments.slice(start, end);
+
+            if (paginatedPayments.length === 0) {
+                approvedContainer.innerHTML = `<tr><td colspan="5" class="text-center py-4">${searchTerm 
+                    ? 'هیچ پرداختی با این مشخصات یافت نشد.' 
+                    : 'هیچ پرداخت تایید شده‌ای وجود ندارد.'}</td></tr>`;
+                paginationContainer.innerHTML = '';
+            } else {
+                 approvedContainer.innerHTML = paginatedPayments.map((payment, index) => {
+                    const paymentDate = new Date(payment.timestamp.seconds * 1000).toLocaleDateString('fa-IR');
+                    return `
+                    <tr class="hover:bg-gray-50 transition-colors animate-stagger-item block md:table-row mb-4 md:mb-0 border md:border-none rounded-lg md:rounded-none shadow md:shadow-none p-4 md:p-0" style="animation-delay: ${index * 50}ms">
+                        <td class="md:px-6 md:py-4 block md:table-cell" data-label="نام"><span>${payment.userName}</span></td>
+                        <td class="md:px-6 md:py-4 block md:table-cell ${payment.itemType === 'package' ? 'text-purple-600 font-semibold' : ''}" data-label="مورد"><span>${payment.itemTitle}</span></td>
+                        <td class="md:px-6 md:py-4 text-green-700 font-semibold block md:table-cell" data-label="مبلغ"><span>${(payment.finalPrice ?? 0).toLocaleString('fa-IR')} ت</span></td>
+                        <td class="md:px-6 md:py-4 font-mono block md:table-cell" data-label="۴ رقم آخر"><span>${payment.lastFourDigits || 'N/A'}</span></td>
+                        <td class="md:px-6 md:py-4 text-gray-500 block md:table-cell" data-label="تاریخ"><span>${paymentDate}</span></td>
+                    </tr>
+                    `;
+                 }).join('');
+
+                paginationContainer.innerHTML = `
+                    <button id="prev-page-btn" class="btn btn-primary !py-1 !px-3" ${approvedPaymentsCurrentPage <= 1 ? 'disabled' : ''}>قبلی</button>
+                    <span class="font-bold text-gray-600">${approvedPaymentsCurrentPage} از ${totalPages}</span>
+                    <button id="next-page-btn" class="btn btn-primary !py-1 !px-3" ${approvedPaymentsCurrentPage >= totalPages ? 'disabled' : ''}>بعدی</button>
+                `;
+
+                document.getElementById('prev-page-btn')?.addEventListener('click', () => {
+                    if (approvedPaymentsCurrentPage > 1) {
+                        approvedPaymentsCurrentPage--;
+                        renderApprovedPayments();
+                    }
+                });
+                document.getElementById('next-page-btn')?.addEventListener('click', () => {
+                    if (approvedPaymentsCurrentPage < totalPages) {
+                        approvedPaymentsCurrentPage++;
+                        renderApprovedPayments();
+                    }
+                });
+            }
+        }
+        
+        function listenForAdminResults() {
+             unsubscribeAdminListener = onSnapshot(collection(db, 'quiz_results'), (snapshot) => {
+                allAdminResults = snapshot.docs.map(doc => ({id: doc.id, ...sanitizeObjectKeys(doc.data())}));
+                
+                const filterSelect = document.getElementById('quiz-filter');
+                const searchInput = document.getElementById('admin-result-search');
+                if(!filterSelect || !searchInput) return;
+
+                const quizzesInDb = [...new Set(allAdminResults.map(r => r.quizId))].filter(id => allQuizzes[id]);
+                
+                const currentFilterValue = filterSelect.value;
+                filterSelect.innerHTML = quizzesInDb.map(id => `<option value="${id}">${allQuizzes[id].title}</option>`).join('');
+                if (quizzesInDb.includes(currentFilterValue)) {
+                    filterSelect.value = currentFilterValue;
+                }
+                if (quizzesInDb.length === 0) filterSelect.innerHTML = `<option>هنوز نتیجه‌ای ثبت نشده</option>`;
+                
+                const triggerRender = () => displayQuizResults(filterSelect.value);
+                
+                filterSelect.removeEventListener('change', triggerRender);
+                searchInput.removeEventListener('input', triggerRender);
+
+                filterSelect.addEventListener('change', () => { resultsCurrentPage = 1; triggerRender(); });
+                searchInput.addEventListener('input', () => { resultsCurrentPage = 1; triggerRender(); });
+
+                triggerRender();
+             });
+        }
+        
+        function displayQuizResults(quizId) {
+            const tableBody = document.getElementById('results-table-body'), statsCards = document.getElementById('admin-stats-cards'), analysisContainer = document.getElementById('question-analysis-container'), paginationContainer = document.getElementById('results-pagination-container'), searchInput = document.getElementById('admin-result-search');
+            if (!tableBody || !statsCards || !analysisContainer || !paginationContainer || !searchInput) return;
+
+            if(!quizId) { 
+                tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4">لطفا یک آزمون را انتخاب کنید.</td></tr>`;
+                 statsCards.innerHTML = ''; analysisContainer.innerHTML = ''; paginationContainer.innerHTML = '';
+                return; 
+            }
+            
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            let resultsForQuiz = allAdminResults.filter(r => r.quizId === quizId);
+            
+            if (searchTerm) {
+                resultsForQuiz = resultsForQuiz.filter(res => res.name.toLowerCase().includes(searchTerm) || res.userEmail.toLowerCase().includes(searchTerm));
+            }
+
+            const totalParticipants = resultsForQuiz.length;
+            const avgPercentage = totalParticipants > 0 ? resultsForQuiz.reduce((acc, r) => acc + r.percentage, 0) / totalParticipants : 0;
+            statsCards.innerHTML = `<div class="p-4 bg-white rounded-xl shadow-md text-center animate-slide-up"><p class="text-sm font-semibold text-gray-500">تعداد شرکت‌کنندگان</p><p class="text-3xl font-bold text-purple-600 mt-1">${totalParticipants}</p></div><div class="p-4 bg-white rounded-xl shadow-md text-center animate-slide-up" style="animation-delay: 100ms;"><p class="text-sm font-semibold text-gray-500">میانگین درصد</p><p class="text-3xl font-bold text-green-600 mt-1">${avgPercentage.toFixed(2)}%</p></div>`;
+
+            resultsForQuiz.sort((a, b) => b.score - a.score);
+            
+            const totalPages = Math.ceil(resultsForQuiz.length / resultsPerPage);
+            if(resultsCurrentPage > totalPages && totalPages > 0) resultsCurrentPage = totalPages;
+            else if (totalPages === 0) resultsCurrentPage = 1;
+
+            const start = (resultsCurrentPage - 1) * resultsPerPage;
+            const end = start + resultsPerPage;
+            const paginatedResults = resultsForQuiz.slice(start, end);
+
+            if (paginatedResults.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4">${searchTerm ? 'نتیجه‌ای با این مشخصات یافت نشد.' : 'هنوز نتیجه‌ای برای این آزمون ثبت نشده.'}</td></tr>`;
+                paginationContainer.innerHTML = '';
+            } else {
+                tableBody.innerHTML = paginatedResults.map((res, index) => {
+                    const rank = start + index + 1;
+                    return `<tr class="hover:bg-gray-50 transition-colors animate-stagger-item block md:table-row mb-4 md:mb-0 border md:border-none rounded-lg md:rounded-none shadow md:shadow-none p-4 md:p-0" style="animation-delay: ${index * 50}ms">
+                                <td class="md:px-6 md:py-4 font-medium block md:table-cell" data-label="رتبه"><span>${rank}</span></td>
+                                <td class="md:px-6 md:py-4 block md:table-cell" data-label="نام"><span>${res.name}</span></td>
+                                <td class="md:px-6 md:py-4 block md:table-cell" data-label="درصد"><span>${res.percentage.toFixed(2)}%</span></td>
+                                <td classD="md:px-6 md:py-4 text-center block md:table-cell" data-label="کلیک"><span>${res.adClicked ? '<span class="text-green-500 font-bold">✔️</span>' : '<span class="text-red-500">❌</span>'}</span></td>
+                                <td class="md:px-6 md:py-4 block md:table-cell responsive-action-cell" data-label="">
+                                    <button data-result-id="${res.id}" class="btn btn-primary text-xs !py-1 !px-3 view-admin-report-btn w-full md:w-auto">مشاهده</button>
+                                </td>
+                            </tr>`
+                }).join('');
+                document.querySelectorAll('.view-admin-report-btn').forEach(btn => btn.addEventListener('click', (e) => displayResults(allAdminResults.find(r => r.id === e.currentTarget.dataset.resultId), 'admin')));
+                
+                paginationContainer.innerHTML = `
+                    <button id="prev-results-page-btn" class="btn btn-primary !py-1 !px-3" ${resultsCurrentPage <= 1 ? 'disabled' : ''}>قبلی</button>
+                    <span class="font-bold text-gray-600">${resultsCurrentPage} از ${totalPages}</span>
+                    <button id="next-results-page-btn" class="btn btn-primary !py-1 !px-3" ${resultsCurrentPage >= totalPages ? 'disabled' : ''}>بعدی</button>
+                `;
+
+                document.getElementById('prev-results-page-btn')?.addEventListener('click', () => { if (resultsCurrentPage > 1) { resultsCurrentPage--; displayQuizResults(quizId); }});
+                document.getElementById('next-results-page-btn')?.addEventListener('click', () => { if (resultsCurrentPage < totalPages) { resultsCurrentPage++; displayQuizResults(quizId); }});
+            }
+            
+            const quizData = allQuizzes[quizId];
+            if (quizData) {
+                analysisContainer.innerHTML = quizData.questions.map((q, index) => `<div><p class="font-semibold mb-2">${index + 1}. ${q.question}</p><div class="space-y-1">${q.options.map((opt, i) => `<div class="flex items-center text-xs gap-4"><div class="flex-1">${opt} (${resultsForQuiz.filter(r => r.answers[index] === i).length})</div><div class="w-1/2 bg-gray-200 rounded-full h-4"><div class="h-4 ${i === q.correctAnswer ? 'bg-green-500' : 'bg-purple-500'}" style="width: ${((resultsForQuiz.filter(r => r.answers[index] === i).length / (resultsForQuiz.filter(r=>r.answers[index]!==null).length || 1)) * 100).toFixed(1)}%"></div></div></div>`).join('')}</div></div>`).join('');
+            } else {
+                analysisContainer.innerHTML = '<p class="text-gray-500">اطلاعات این آزمون در حال حاضر موجود نیست (ممکن است حذف شده باشد).</p>';
+            }
+        };
+        
+        // --- QUIZ AND RESULT LOGIC ---
+        function startQuiz(quizId) {
+            const quizData = allQuizzes[quizId];
+            quizState = { quizId, currentQuestionIndex: 0, userAnswers: new Array(quizData.questions.length).fill(null), totalTimer: null, totalTimeRemaining: quizData.duration * 60 };
+            renderView('quiz', { quizId });
+            renderQuestion();
+            startTimers();
+        }
+
+        function renderQuestion() {
+            const quizData = allQuizzes[quizState.quizId];
+            const question = quizData.questions[quizState.currentQuestionIndex];
+            document.getElementById('question-number').textContent = quizState.currentQuestionIndex + 1;
+            document.getElementById('question-text').textContent = question.question;
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = question.options.map((option, index) => `<div class="option" data-option-index="${index}">${option}</div>`).join('');
+            
+            const previouslySelected = quizState.userAnswers[quizState.currentQuestionIndex];
+            if (previouslySelected !== null) {
+                const selectedEl = optionsContainer.querySelector(`[data-option-index="${previouslySelected}"]`);
+                if (selectedEl) selectedEl.classList.add('selected');
+            }
+            
+            document.querySelectorAll('.option').forEach(opt => {
+                opt.addEventListener('click', (e) => {
+                    const clickedOption = e.currentTarget;
+                    const optionIndex = parseInt(clickedOption.dataset.optionIndex);
+
+                    if (clickedOption.classList.contains('selected')) {
+                        // If it's already selected, deselect it
+                        clickedOption.classList.remove('selected');
+                        quizState.userAnswers[quizState.currentQuestionIndex] = null;
+                    } else {
+                        // If it's not selected, select it (and deselect others)
+                        document.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+                        clickedOption.classList.add('selected');
+                        quizState.userAnswers[quizState.currentQuestionIndex] = optionIndex;
+                    }
+                });
+            });
+
+            const nextBtn = document.getElementById('next-btn');
+            const prevBtn = document.getElementById('previous-btn');
+            
+            prevBtn.disabled = quizState.currentQuestionIndex === 0;
+
+            if (quizState.currentQuestionIndex === quizData.questions.length - 1) {
+                nextBtn.textContent = 'پایان آزمون';
+            } else {
+                nextBtn.textContent = 'سوال بعدی';
+            }
+
+            updateProgressBar();
+        }
+        
+        function updateProgressBar() {
+            document.getElementById('progress-bar').style.width = `${((quizState.currentQuestionIndex + 1) / allQuizzes[quizState.quizId].questions.length) * 100}%`;
+        }
+
+        function startTimers() {
+            const totalTimerEl = document.getElementById('timer');
+            quizState.totalTimer = setInterval(() => {
+                quizState.totalTimeRemaining--;
+                const minutes = Math.floor(quizState.totalTimeRemaining / 60);
+                const seconds = quizState.totalTimeRemaining % 60;
+                if (totalTimerEl) totalTimerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                if (quizState.totalTimeRemaining <= 0) finishQuiz();
+            }, 1000);
+        }
+
+        function handleNextQuestion() {
+            const quizData = allQuizzes[quizState.quizId];
+            if (quizState.currentQuestionIndex < quizData.questions.length - 1) {
+                quizState.currentQuestionIndex++;
+                renderQuestion();
+            } else {
+                finishQuiz();
+            }
+        }
+
+        function handlePreviousQuestion() {
+            if (quizState.currentQuestionIndex > 0) {
+                quizState.currentQuestionIndex--;
+                renderQuestion();
+            }
+        }
+
+        async function finishQuiz() {
+            clearInterval(quizState.totalTimer);
+            const quizData = allQuizzes[quizState.quizId];
+            let correct = 0, incorrect = 0;
+            quizState.userAnswers.forEach((answer, index) => { if (answer !== null) { if (answer === quizData.questions[index].correctAnswer) correct++; else incorrect++; } });
+            const unanswered = quizData.questions.length - (correct + incorrect);
+            const score = (correct * 3) - incorrect;
+            const percentage = (score / (quizData.questions.length * 3)) * 100;
+            const resultData = { quizId: quizState.quizId, userId: currentUser.uid, userEmail: currentUser.email, name: userProfile.name, answers: quizState.userAnswers, correct, incorrect, unanswered, score, percentage: Math.max(0, percentage), potentialPercentage: Math.max(0, (correct * 3 / (quizData.questions.length * 3)) * 100), totalQuestions: quizData.questions.length, adClicked: false, timestamp: Timestamp.now() };
+            const docRef = await addDoc(collection(db, 'quiz_results'), resultData);
+            resultData.id = docRef.id;
+            displayResults(resultData, 'student');
+        }
+
+        async function displayResults(resultData, origin = 'student') {
+            const snapshot = await getDocs(query(collection(db, 'quiz_results'), where("quizId", "==", resultData.quizId)));
+            const allScoresForThisQuiz = snapshot.docs.map(doc => doc.data().score).sort((a, b) => b - a);
+            const rank = allScoresForThisQuiz.indexOf(resultData.score) + 1;
+            renderView('result', { resultData, rank: `${rank} از ${allScoresForThisQuiz.length}`, origin });
+        }
+        
+        function renderQuestionReview(resultData) {
+            const container = document.getElementById('question-review-container');
+            if(!container) return;
+            const quizData = allQuizzes[resultData.quizId];
+
+            if (!quizData) {
+                container.innerHTML = '<p class="text-gray-500 text-center">اطلاعات این آزمون یافت نشد. (ممکن است توسط استاد حذف شده باشد)</p>';
+                return;
+            }
+
+            container.innerHTML = quizData.questions.map((q, index) => {
+                const userAnswer = resultData.answers[index];
+                let statusClass = 'bg-gray-100 text-gray-800', statusText = 'بی‌پاسخ';
+                if (userAnswer !== null) {
+                    if (userAnswer === q.correctAnswer) { statusClass = 'bg-green-100 text-green-800'; statusText = 'پاسخ صحیح'; } 
+                    else { statusClass = 'bg-red-100 text-red-800'; statusText = 'پاسخ غلط'; }
+                }
+                return `<div class="p-4 border rounded-lg bg-white"><div class="flex justify-between items-center mb-3"><p class="font-bold">سوال ${index + 1}</p><span class="text-xs font-semibold px-2 py-1 rounded-full ${statusClass}">${statusText}</span></div><p class="mb-4">${q.question}</p><div class="space-y-2 text-sm">${q.options.map((opt, i) => `<div class="p-3 border rounded-md ${i === q.correctAnswer ? 'border-green-500 bg-green-50' : (i === userAnswer ? 'border-red-500 bg-red-50' : 'border-gray-200')}">${opt}</div>`).join('')}</div><div class="mt-4 pt-4 border-t text-sm text-purple-800 bg-purple-50 p-3 rounded-md"><p><strong class="font-semibold">پاسخ تشریحی:</strong> ${q.explanation}</p></div></div>`;
+            }).join('');
+        }
+
+        // Initial View Render
+        renderView('loading');
+
+    </script>
+</body>
+</html>
