@@ -2083,7 +2083,7 @@
         // --- QUIZ AND RESULT LOGIC ---
         function startQuiz(quizId) {
             const quizData = allQuizzes[quizId];
-            quizState = { quizId, currentQuestionIndex: 0, userAnswers: new Array(quizData.questions.length).fill(null), totalTimer: null, totalTimeRemaining: quizData.duration * 60 };
+            quizState = { quizId, currentQuestionIndex: 0, userAnswers: new Array(quizData.questions.length).fill(null), totalTimer: null, totalTimeRemaining: quizData.duration * 60, isSubmitting: false }; // FIX: Added isSubmitting flag
             renderView('quiz', { quizId });
             renderQuestion();
             startTimers();
@@ -2168,6 +2168,26 @@
         }
 
         async function finishQuiz() {
+            // --- FIX START ---
+            // Check if the quiz is already being submitted.
+            if (quizState.isSubmitting) {
+                console.log("Quiz submission already in progress. Ignoring duplicate request.");
+                return; // Exit if submission is already in progress
+            }
+            // Set the flag to true to prevent multiple submissions.
+            quizState.isSubmitting = true; 
+            
+            // Also disable buttons to give visual feedback.
+            const nextBtn = document.getElementById('next-btn');
+            if (nextBtn) {
+                toggleButtonLoading(nextBtn, true, 'در حال ثبت');
+            }
+            const prevBtn = document.getElementById('previous-btn');
+            if (prevBtn) {
+                prevBtn.disabled = true;
+            }
+            // --- FIX END ---
+
             clearInterval(quizState.totalTimer);
             const quizData = allQuizzes[quizState.quizId];
             let correct = 0, incorrect = 0;
@@ -2215,5 +2235,4 @@
     </script>
 </body>
 </html>
-
 
