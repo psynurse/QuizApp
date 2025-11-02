@@ -405,12 +405,15 @@
     <!-- Toast Container -->
     <div id="toast-container"></div>
 
-    <!-- Firebase SDK (Loaded locally from /firebase-sdk/ to bypass sanctions) -->
+    <!-- 
+      Firebase SDK (Loaded locally from /QuizApp/firebase-sdk/ to bypass sanctions)
+      آدرس‌دهی مطلق برای گیت‌هاب پیجز (حل مشکل 404)
+    -->
     <script type="module">
-        import { initializeApp } from "./firebase-sdk/firebase-app.js";
-        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from "./firebase-sdk/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, onSnapshot, query, doc, setDoc, where, getDoc, Timestamp, updateDoc, deleteDoc } from "./firebase-sdk/firebase-firestore.js";
-        import { getAnalytics } from "./firebase-sdk/firebase-analytics.js";
+        import { initializeApp } from "/QuizApp/firebase-sdk/firebase-app.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from "/QuizApp/firebase-sdk/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, onSnapshot, query, doc, setDoc, where, getDoc, Timestamp, updateDoc, deleteDoc } from "/QuizApp/firebase-sdk/firebase-firestore.js";
+        import { getAnalytics } from "/QuizApp/firebase-sdk/firebase-analytics.js";
 
         // --- CONFIGURATION ---
         const ADMIN_EMAIL = "rbidokhti@gmail.com";
