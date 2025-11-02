@@ -405,12 +405,12 @@
     <!-- Toast Container -->
     <div id="toast-container"></div>
 
-    <!-- Firebase SDK -->
+    <!-- Firebase SDK (Loaded locally from /firebase-sdk/ to bypass sanctions) -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, onSnapshot, query, doc, setDoc, where, getDoc, Timestamp, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-analytics.js";
+        import { initializeApp } from "./firebase-sdk/firebase-app.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from "./firebase-sdk/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, onSnapshot, query, doc, setDoc, where, getDoc, Timestamp, updateDoc, deleteDoc } from "./firebase-sdk/firebase-firestore.js";
+        import { getAnalytics } from "./firebase-sdk/firebase-analytics.js";
 
         // --- CONFIGURATION ---
         const ADMIN_EMAIL = "rbidokhti@gmail.com";
@@ -433,10 +433,34 @@
           measurementId: "G-WV9K9QZN9M"
         };
 
+        // آدرس کامل Cloudflare Worker شما
+        const WORKER_URL = "https://autumn-bar-fa8d.workmecrk.workers.dev";
+        const WORKER_DOMAIN = "autumn-bar-fa8d.workmecrk.workers.dev"; // فقط دامنه، بدون https
+
         const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
+        
+        // --- [مهم] اتصال به پراکسی برای عبور از تحریم (روش صحیح) ---
+        
+        // ۱. اتصال Auth به پراکسی
+        // ما از قابلیت customDomain فایربیس استفاده می‌کنیم
+        // و به آن می‌گوییم که دامنه identitytoolkit.googleapis.com را با پراکسی ما جایگزین کند.
+        const auth = getAuth(app, {
+          customDomain: `${WORKER_DOMAIN}/identitytoolkit.googleapis.com`
+        });
+
+        // ۲. اتصال Firestore به پراکسی
+        // به طور مشابه، به Firestore می‌گوییم که دامنه firestore.googleapis.com را با پراکسی ما جایگزین کند.
+        const db = getFirestore(app, {
+          customDomain: `${WORKER_DOMAIN}/firestore.googleapis.com`
+        });
+        
         const analytics = getAnalytics(app);
+        
+        console.log(`موفقیت: اتصال به پراکسی فایربیس برقرار شد.`);
+        console.log(`Auth Proxy: ${WORKER_DOMAIN}/identitytoolkit.googleapis.com`);
+        console.log(`Firestore Proxy: ${WORKER_DOMAIN}/firestore.googleapis.com`);
+        // --- پایان بخش پراکسی ---
+
 
         // --- STATE & GLOBAL VARS ---
         let currentUser = null;
@@ -653,21 +677,15 @@
 
             for (let i = 0; i < maxRetries; i++) {
                  try {
-                    // Conditionally set API key for Preview vs. Live environment
-                    /*
-                    const isPreview = typeof __app_id !== 'undefined';
-                    const apiKey = isPreview ? "" : "AIzaSyDM8TDS86QLxRypLLB1Mb0CIgS1CUVines";
-                    */
+                    // کلید API شما که قبلاً در کد به صورت کامنت وجود داشت
+                    const geminiApiKey = "AIzaSyDM8TDS86QLxRypLLB1Mb0CIgS1CUVines";
                     
-                    // !! مهم: آدرس زیر را با آدرس Cloudflare Worker خودتان که ساخته‌اید، جایگزین کنید
-                    // آدرس شما چیزی شبیه به 'https://my-gemini-proxy.my-account.workers.dev' خواهد بود
-                    const apiUrl = "https://autumn-bar-fa8d.workmecrk.workers.dev/";
-
-                    // The preview environment will auto-inject the key if it's empty.
-                    // The live environment needs the key to be in the URL.
-                    /*
-                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
-                    */
+                    // آدرس پراکسی ورکر شما (از متغیری که در بالا تعریف کردیم)
+                    // const WORKER_URL = "https://autumn-bar-fa8d.workmecrk.workers.dev"; // این متغیر باید در بالای اسکریپت موجود باشد
+                    
+                    // ساخت URL نهایی برای ارسال به پراکسی
+                    // فرمت: WORKER_URL / TARGET_DOMAIN / API_PATH ? key=API_KEY
+                    const apiUrl = `${WORKER_URL}/generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${geminiApiKey}`;
 
                     const payload = { contents: [{ parts: [{ text: userQuery }] }], systemInstruction: { parts: [{ text: systemPrompt }] }, };
                     const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -720,7 +738,7 @@
                     viewContent = `<div class="card max-w-2xl mx-auto animate-slide-up !p-0 overflow-hidden flex flex-col md:flex-row shadow-2xl">
                         <div class="w-full md:w-1/2 p-6 sm:p-8">
                             <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">پلتفرم آزمون آنلاین پرستاری</h2>
-                            <p class="text-red-600 text-sm text-center mb-4 font-semibold">حتما از vpn استفاده کنید (به دلیل استفاده از امکانات گوگل در پلتفرم)</p>
+                            <!-- <p class="text-red-600 text-sm text-center mb-4 font-semibold">حتما از vpn استفاده کنید (به دلیل استفاده از امکانات گوگل در پلتفرم)</p> --> <!-- پیام VPN حذف شد -->
                             <div class="flex justify-center mb-6 border-b"><button id="login-tab-btn" class="tab-btn active">ورود</button><button id="register-tab-btn" class="tab-btn">ثبت نام</button></div>
                             <form id="login-form"><div class="space-y-3"><input type="email" id="login-email" class="input-field" placeholder="ایمیل" required><div class="relative"><input type="password" id="login-password" class="input-field" placeholder="رمز عبور" required><span class="toggle-password-visibility absolute inset-y-0 left-0 flex items-center pl-3 cursor-pointer"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye text-gray-400" viewBox="0 0 16 16"><path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.816 1.123-2.455 2.226-4.223 2.659A5.006 5.006 0 0 1 8 10.5a5 5 0 0 1-2.605-.724A13.132 13.132 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/></svg></span></div></div><button type="submit" id="login-submit-btn" class="btn btn-primary w-full mt-6">ورود</button><p id="login-error" class="text-red-500 mt-4 h-5 text-center"></p></form>
                             <form id="register-form" class="hidden"><div class="space-y-3"><input type="text" id="register-name" class="input-field" placeholder="نام و نام خانوادگی" required><input type="tel" id="register-phone" class="input-field" placeholder="شماره تماس (مثال: 09123456789)" required><input type="email" id="register-email" class="input-field" placeholder="ایمیل" required><div class="relative"><input type="password" id="register-password" class="input-field" placeholder="رمز عبور (حداقل ۶ کاراکتر)" required><span class="toggle-password-visibility absolute inset-y-0 left-0 flex items-center pl-3 cursor-pointer"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye text-gray-400" viewBox="0 0 16 16"><path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.816 1.123-2.455 2.226-4.223 2.659A5.006 5.006 0 0 1 8 10.5a5 5 0 0 1-2.605-.724A13.132 13.132 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/></svg></span></div><div class="relative"><input type="password" id="register-password-confirm" class="input-field" placeholder="تکرار رمز عبور" required><span class="toggle-password-visibility absolute inset-y-0 left-0 flex items-center pl-3 cursor-pointer"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye text-gray-400" viewBox="0 0 16 16"><path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.816 1.123-2.455 2.226-4.223 2.659A5.006 5.006 0 0 1 8 10.5a5 5 0 0 1-2.605-.724A13.132 13.132 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/></svg></span></div><p class="text-xs text-gray-500 pt-1 text-center">لطفا ایمیل و رمز عبور خود را جهت ورودهای مجدد به خاطر بسپارید.</p></div><button type="submit" id="register-submit-btn" class="btn btn-primary w-full mt-6">ثبت نام</button><p id="register-error" class="text-red-500 mt-4 h-5 text-center"></p></form>
@@ -1037,7 +1055,7 @@
             errorEl.textContent = '';
             try { await signInWithEmailAndPassword(auth, email, password); } 
             catch (error) {
-                errorEl.textContent = error.code === 'auth/invalid-credential' ? 'ایمیل یا رمز عبور اشتباه است.' : 'خطا در ورود. دوباره تلاش کنید.';
+                errorEl.textContent = (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') ? 'ایمیل یا رمز عبور اشتباه است.' : 'خطا در ورود. دوباره تلاش کنید.';
                 console.error("Login Error: ", error);
             } finally {
                 toggleButtonLoading(submitBtn, false, 'ورود');
