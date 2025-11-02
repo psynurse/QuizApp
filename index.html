@@ -3,12 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>پلتفرم آزمون آنلاین پرستاری</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <title>پلتفرم آزمون آنلاین روان پرستاری</title>
+
+    <!-- 
+      بخش ۱: لود کردن فایل‌های CSS 
+      Tailwind از پوشه محلی /css/ لود می‌شود تا تحریم را دور بزند
+    -->
+    <link href="/css/tailwind.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- 
+      بخش ۲: لود کردن فایل‌های Firebase SDK به روش سنتی (Global)
+      این فایل‌ها متغیر firebase را در دسترس قرار می‌دهند
+      آدرس‌دهی مطلق (/firebase-sdk/) برای حل 404 استفاده شده
+    -->
+    <script src="/firebase-sdk/firebase-app.js"></script>
+    <script src="/firebase-sdk/firebase-auth.js"></script>
+    <script src="/firebase-sdk/firebase-firestore.js"></script>
+    <script src="/firebase-sdk/firebase-analytics.js"></script>
+
+    <!-- [FIX] Re-adding Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- استایل‌های داخلی شما (تغییری نکرده) -->
     <style>
         body { 
             font-family: 'Vazirmatn', sans-serif; 
@@ -406,15 +424,17 @@
     <div id="toast-container"></div>
 
     <!-- 
-      Firebase SDK (Loaded locally from /QuizApp/firebase-sdk/ to bypass sanctions)
-      آدرس‌دهی مطلق برای گیت‌هاب پیجز (حل مشکل 404)
+      اسکریپت اصلی برنامه (v5)
+      این اسکریپت دیگر "type=module" نیست و از متغیر جهانی firebase استفاده می‌کند
     -->
-    <script type="module">
-        import { initializeApp } from "/QuizApp/firebase-sdk/firebase-app.js";
-        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from "/QuizApp/firebase-sdk/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, onSnapshot, query, doc, setDoc, where, getDoc, Timestamp, updateDoc, deleteDoc } from "/QuizApp/firebase-sdk/firebase-firestore.js";
-        import { getAnalytics } from "/QuizApp/firebase-sdk/firebase-analytics.js";
-        
+    <script>
+    document.addEventListener("DOMContentLoaded", () => {
+        // --- [مهم] بخش ۱: تنظیمات و اتصال به پراکسی ---
+
+        // آدرس کامل Cloudflare Worker شما
+        const WORKER_URL = "https://autumn-bar-fa8d.workmecrk.workers.dev";
+        const WORKER_DOMAIN = "autumn-bar-fa8d.workmecrk.workers.dev"; // فقط دامنه، بدون https
+
         // --- CONFIGURATION ---
         const ADMIN_EMAIL = "rbidokhti@gmail.com";
         
@@ -436,34 +456,32 @@
           measurementId: "G-WV9K9QZN9M"
         };
 
-        // آدرس کامل Cloudflare Worker شما
-        const WORKER_URL = "https://autumn-bar-fa8d.workmecrk.workers.dev";
-        const WORKER_DOMAIN = "autumn-bar-fa8d.workmecrk.workers.dev"; // فقط دامنه، بدون https
-
+        // --- استفاده از متغیر جهانی firebase ---
+        const { initializeApp } = firebase.app;
+        const { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail } = firebase.auth;
+        const { getFirestore, collection, addDoc, getDocs, onSnapshot, query, doc, setDoc, where, getDoc, Timestamp, updateDoc, deleteDoc } = firebase.firestore;
+        const { getAnalytics } = firebase.analytics;
+        
         const app = initializeApp(firebaseConfig);
         
-        // --- [مهم] اتصال به پراکسی برای عبور از تحریم (روش صحیح) ---
+        // --- [مهم] اتصال به پراکسی (روش صحیح customDomain با SDK جهانی) ---
         
         // ۱. اتصال Auth به پراکسی
-        // ما از قابلیت customDomain فایربیس استفاده می‌کنیم
-        // و به آن می‌گوییم که دامنه identitytoolkit.googleapis.com را با پراکسی ما جایگزین کند.
         const auth = getAuth(app, {
           customDomain: `${WORKER_DOMAIN}/identitytoolkit.googleapis.com`
         });
 
         // ۲. اتصال Firestore به پراکسی
-        // به طور مشابه، به Firestore می‌گوییم که دامنه firestore.googleapis.com را با پراکسی ما جایگزین کند.
         const db = getFirestore(app, {
           customDomain: `${WORKER_DOMAIN}/firestore.googleapis.com`
         });
         
         const analytics = getAnalytics(app);
         
-        console.log(`موفقیت: اتصال به پراکسی فایربیس برقرار شد.`);
+        console.log("موفقیت (v5): اتصال به پراکسی فایربیس برقرار شد.");
         console.log(`Auth Proxy: ${WORKER_DOMAIN}/identitytoolkit.googleapis.com`);
         console.log(`Firestore Proxy: ${WORKER_DOMAIN}/firestore.googleapis.com`);
         // --- پایان بخش پراکسی ---
-
 
         // --- STATE & GLOBAL VARS ---
         let currentUser = null;
@@ -2253,6 +2271,7 @@
         // Initial View Render
         renderView('loading');
 
+    }); // پایان DOMContentLoaded
     </script>
 </body>
 </html>
