@@ -1270,7 +1270,13 @@
                         name
                     );
                     
-                    // 3. Create user profile document in Database (ID must be the same as Auth ID)
+                    // --- FIX: LOGIC CHANGE ---
+                    // 3. Create session and log in FIRST
+                    // This ensures the next call is made as an authenticated 'user', not a 'guest'
+                    await account.createEmailPasswordSession(email, password);
+
+                    // 4. Create user profile document in Database (ID must be the same as Auth ID)
+                    // This is now called as 'Role: Users'
                     await db.createDocument(
                         DATABASE_ID,
                         USERS_COLLECTION_ID,
@@ -1285,8 +1291,8 @@
                         [Permission.read(Role.user(userAccount.$id)), Permission.write(Role.user(userAccount.$id))]
                     );
 
-                    // 4. Create session and log in
-                    await account.createEmailPasswordSession(email, password);
+                    // 4. Create session and log in - MOVED UP
+                    // await account.createEmailPasswordSession(email, password);
                     
                     showToast('ثبت نام با موفقیت انجام شد!', 'success');
                     loadUserSession();
@@ -1296,11 +1302,22 @@
                         'user_already_exists': 'این ایمیل قبلاً ثبت نام کرده است.',
                         'phone-number-already-in-use': 'این شماره تماس قبلاً ثبت نام کرده است.', // This error is no longer triggered by our code, but good to keep
                         'Invalid password': 'رمز عبور باید حداقل ۸ کاراکتر باشد.', // Appwrite default
-                        'general_storage': 'خطا در ذخیره پروفایل. لطفاً دوباره تلاش کنید.'
+                        'general_storage': 'خطا در ذخیره پروفایل. لطفاً دوباره تلاش کنید.',
+                        'user_permission_denied': 'خطای دسترسی دیتاب B. (تنظیمات Permission را چک کنید)', // Appwrite permission error
                     };
-                    errorEl.textContent = errorMap[error.code] || 'خطا در ثبت نام. دوباره تلاش کنید.';
+                    
+                    let errorMessage = 'خطا در ثبت نام. دوباره تلاش کنید.';
+                    if (error.code === 'user_permission_denied' || (error.message && error.message.toLowerCase().includes('permission'))) {
+                        errorMessage = 'خطای دسترسی دیتابیس. (تنظیمات Permission کالکشن users را در پنل Appwrite چک کنید)';
+                    } else if (errorMap[error.code]) {
+                        errorMessage = errorMap[error.code];
+                    }
+
+                    errorEl.textContent = errorMessage;
                     console.error("Registration Error: ", error); 
                     // Clean up account if document creation fails (optional, but good practice)
+                    // Note: Client-side cleanup of auth account is not feasible without admin rights or a user session.
+                    // The user must manually delete the "Auth" user in Appwrite panel before trying again with the same email.
                 } finally {
                     toggleButtonLoading(submitBtn, false, 'ثبت نام');
                 }
