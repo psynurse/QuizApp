@@ -760,7 +760,7 @@
             }
 
             // --- VIEW CONTENT MAP ---
-            // (This object holds the HTML templates for all application views)
+            // FIX: Changed views that use 'props' to be functions that accept 'props'
             const viewContentMap = {
                 loading: `
                     <div class="card p-8 text-center animate-slide-up">
@@ -832,7 +832,7 @@
                             </form>
                         </div>
                     </div>`,
-                studentDashboard: `
+                studentDashboard: (props) => `
                     <div class="space-y-8 animate-slide-up">
                         <!-- Header -->
                         <div class="card !p-4 sm:!p-6 flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -893,7 +893,7 @@
                             </div>
                         </div>
                     </div>`,
-                adminDashboard: `
+                adminDashboard: (props) => `
                     <div class="flex flex-col md:flex-row gap-6 animate-slide-up">
                         <!-- Sidebar -->
                         <div class="card !p-4 md:w-64 flex-shrink-0">
@@ -937,7 +937,7 @@
                             </div>
                         </div>
                     </div>`,
-                quiz: `
+                quiz: (props) => `
                     <div class="card animate-slide-up">
                         <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
                             <h1 class="text-2xl font-bold text-gray-800">${allQuizzes[props.quizId].title}</h1>
@@ -963,7 +963,7 @@
                             </div>
                         </div>
                     </div>`,
-                result: `
+                result: (props) => `
                     <div class="space-y-8 animate-slide-up">
                         <!-- Header -->
                         <div class="card !p-4 sm:!p-6 flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -1023,7 +1023,7 @@
                             </div>
                         </div>
                     </div>`,
-                paymentInstructions: `
+                paymentInstructions: (props) => `
                     <div class="card max-w-2xl mx-auto animate-slide-up">
                         <button id="back-to-dash-btn" class="absolute top-4 left-4 text-gray-400 hover:text-gray-600">
                             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -1064,7 +1064,7 @@
                         
                         <button id="proceed-to-submit-btn" class="btn btn-primary w-full mt-8">ثبت اطلاعات واریز</button>
                     </div>`,
-                paymentSubmission: `
+                paymentSubmission: (props) => `
                     <div class="card max-w-lg mx-auto animate-slide-up">
                         <button id="back-to-instructions-btn" class="absolute top-4 left-4 text-gray-400 hover:text-gray-600">
                              <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
@@ -1086,10 +1086,28 @@
             };
 
 
-            // --- VIEW RENDERING ENGINE (unchanged) ---
+            // --- VIEW RENDERING ENGINE (FIXED) ---
             const renderView = (viewName, props = {}) => {
-                // ... (Rendering logic remains the same)
-                const viewContent = viewContentMap[viewName] || `<div class="card"><h1 class="text-red-500 font-bold">Error: View "${viewName}" not found.</h1></div>`;
+                const viewTemplate = viewContentMap[viewName];
+                let viewContent;
+
+                if (typeof viewTemplate === 'function') {
+                    // If it's a function, call it with props to get the HTML string
+                    try {
+                        viewContent = viewTemplate(props);
+                    } catch (error) {
+                        console.error(`Error rendering view "${viewName}":`, error);
+                        viewContent = `<div class="card"><h1 class="text-red-500 font-bold">Error rendering view.</h1><p>${error}</p></div>`;
+                    }
+                } else {
+                    // Otherwise, it's just a static string
+                    viewContent = viewTemplate;
+                }
+                
+                if (!viewContent) {
+                    viewContent = `<div class="card"><h1 class="text-red-500 font-bold">Error: View "${viewName}" not found.</h1></div>`;
+                }
+
                 mainContainer.innerHTML = viewContent;
                 attachEventListeners(viewName, props);
             };
@@ -1654,7 +1672,8 @@
                 let buttonHtml = getPaymentStatusButton('package', pkgId);
                 
                 if (!buttonHtml) {
-                     buttonCode = `<button data-item-id="${pkgId}" data-item-type="package" class="btn bg-green-600 hover:bg-green-700 pay-item-btn">${pkgData.price.toLocaleString('fa-IR')} تومان - پرداخت</button>`;
+                     // FIX: Corrected variable name from buttonCode to buttonHtml
+                     buttonHtml = `<button data-item-id="${pkgId}" data-item-type="package" class="btn bg-green-600 hover:bg-green-700 pay-item-btn">${pkgData.price.toLocaleString('fa-IR')} تومان - پرداخت</button>`;
                 }
                 
                 const quizzesInPkgHtml = pkgData.quizIds.map(quizId => {
@@ -1678,11 +1697,60 @@
             
             // --- CHARTING FUNCTIONS (unchanged) ---
             function renderProgressChart(labels, data) {
-                 // ... (implementation of renderProgressChart unchanged)
+                const ctx = document.getElementById('progress-chart')?.getContext('2d');
+                if (!ctx) return;
+                if (progressChartInstance) progressChartInstance.destroy();
+                progressChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'درصد آزمون‌ها',
+                            data: data,
+                            borderColor: '#8b5cf6',
+                            backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                            fill: true,
+                            tension: 0.3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100,
+                                ticks: { callback: value => value + '%' }
+                            }
+                        }
+                    }
+                });
             }
             
             function renderResultPieChart(resultData) {
-                 // ... (implementation of renderResultPieChart unchanged)
+                const ctx = document.getElementById('result-pie-chart')?.getContext('2d');
+                if (!ctx) return;
+                if (resultPieChartInstance) resultPieChartInstance.destroy();
+                resultPieChartInstance = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['صحیح', 'غلط', 'نزده'],
+                        datasets: [{
+                            data: [resultData.correct, resultData.incorrect, resultData.unanswered],
+                            backgroundColor: ['#10b981', '#ef4444', '#6b7280'],
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { font: { family: 'Vazirmatn' } }
+                            }
+                        }
+                    }
+                });
             }
             
             // --- ADMIN DASHBOARD LOGIC (Modified to use Appwrite listDocuments and updateDocument) ---
@@ -2378,5 +2446,4 @@
     </script>
 </body>
 </html>
-
 
