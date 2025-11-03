@@ -1252,13 +1252,15 @@
                 toggleButtonLoading(submitBtn, true, 'ثبت نام');
                 
                 try {
-                    // 1. Check if phone is already registered (Appwrite Query)
+                    // 1. Check if phone is already registered (Appwrite Query) - REMOVED FOR PERMISSIONS
+                    /*
                     const phoneCheck = await db.listDocuments(
                         DATABASE_ID,
                         USERS_COLLECTION_ID,
                         [Query.equal("phone", phone)]
                     );
                     if (phoneCheck.total > 0) throw { code: 'phone-number-already-in-use' };
+                    */
 
                     // 2. Create user in Appwrite Auth
                     const userAccount = await account.create(
@@ -1292,7 +1294,7 @@
                 } catch (error) {
                     const errorMap = {
                         'user_already_exists': 'این ایمیل قبلاً ثبت نام کرده است.',
-                        'phone-number-already-in-use': 'این شماره تماس قبلاً ثبت نام کرده است.',
+                        'phone-number-already-in-use': 'این شماره تماس قبلاً ثبت نام کرده است.', // This error is no longer triggered by our code, but good to keep
                         'Invalid password': 'رمز عبور باید حداقل ۸ کاراکتر باشد.', // Appwrite default
                         'general_storage': 'خطا در ذخیره پروفایل. لطفاً دوباره تلاش کنید.'
                     };
@@ -2446,4 +2448,6 @@
     </script>
 </body>
 </html>
+
+
 
