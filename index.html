@@ -7,9 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <!-- FIX: Changed CDN from jsdelivr to unpkg -->
-    <!-- This should bypass any network filtering that was blocking the SDK -->
-    <script src="https://unpkg.com/appwrite@11.0.0/dist/browser/appwrite.js"></script>
+    <!-- Appwrite SDK has been REMOVED from here -->
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -410,38 +408,34 @@
     <!-- Toast Container -->
     <div id="toast-container"></div>
 
-    <!-- Appwrite SDK -->
-    <script>
-        // FIX: Wrap the entire application logic in a polling function
-        // This function will wait until the Appwrite SDK (from the <head>) is fully loaded
-        (function startApp() {
-            // 1. Check if the 'Appwrite' global object exists
-            if (typeof Appwrite === 'undefined' || !Appwrite) {
-                // If not, wait 100ms and try running this function again
-                console.log("Waiting for Appwrite SDK to load... Retrying in 100ms.");
-                setTimeout(startApp, 100);
-                return; // Stop execution for this attempt
-            }
+    <!-- FIX: Changed script tag to type="module" -->
+    <script type="module">
+        // FIX: Import Appwrite SDK as an ES Module from a reliable CDN (esm.sh)
+        // This replaces the global <script> tag and the polling function
+        import { Client, Account, Databases, ID, Query, Permission, Role } from 'https://esm.sh/appwrite@11.0.0';
 
-            // 2. If we are here, the Appwrite SDK is loaded.
-            console.log("Appwrite SDK found! Initializing application...");
+        console.log("Appwrite SDK imported via ESM. Initializing application...");
+
+        // --- APPWRITE CONFIGURATION ---
+        // (شناسه های شما در اینجا قرار می گیرند)
+        const APPWRITE_ENDPOINT = 'https://psynursequiz.serveirc.com/v1';
+        const PROJECT_ID = '6907940500021bd8798f';
+        const DATABASE_ID = '6907a47a0031b7e84de9';
+        const USERS_COLLECTION_ID = 'users';
+        const PAYMENTS_COLLECTION_ID = 'payments';
+        const QUIZZES_COLLECTION_ID = 'quizzes'; // (مطمئن شوید این شناسه درست است)
+        const PACKAGES_COLLECTION_ID = 'quiz_packages'; // (مطمئن شوید این شناسه درست است)
+        const RESULTS_COLLECTION_ID = 'quiz_results';
+        const DISCOUNTS_COLLECTION_ID = 'discount_codes';
+        const SETTINGS_COLLECTION_ID = 'quiz_settings'; 
+
+        // Initialize Appwrite Client, Account, and Databases
+        const client = new Client();
+        client.setEndpoint(APPWRITE_ENDPOINT).setProject(PROJECT_ID);
+        const account = new Account(client);
+        const db = new Databases(client);
         
-            // FIX: Destructure directly from the global 'Appwrite' object
-            const { Client, Account, Databases, ID, Query, Permission, Role } = Appwrite;
-
-            // --- APPWRITE CONFIGURATION ---
-            const PAYMENTS_COLLECTION_ID = 'payments';
-            const RESULTS_COLLECTION_ID = 'quiz_results';
-            const DISCOUNTS_COLLECTION_ID = 'discount_codes';
-            const SETTINGS_COLLECTION_ID = 'quiz_settings'; 
-
-            // Initialize Appwrite Client, Account, and Databases
-            const client = new Client();
-            client.setEndpoint(APPWRITE_ENDPOINT).setProject(PROJECT_ID);
-            const account = new Account(client);
-            const db = new Databases(client);
-            
-            // --- ADMIN & PAYMENT INFO ---
+        // --- ADMIN & PAYMENT INFO ---
             const ADMIN_EMAIL = "rbidokhti@gmail.com";
             const PAYMENT_INFO = {
                 rawCardNumber: "6063731269518586",
@@ -2030,29 +2024,30 @@
                 if(!container) return;
                 const quizData = allQuizzes[resultData.quizId];
 
-                if (!quizData) {
-                    container.innerHTML = '<p class="text-gray-500 text-center">اطلاعات این آزمون یافت نشد. (ممکن است توسط استاد حذف شده باشد)</p>';
-                    return;
+            if (!quizData) {
+                container.innerHTML = '<p class="text-gray-500 text-center">اطلاعات این آزمون یافت نشد. (ممکن است توسط استاد حذف شده باشد)</p>';
+                return;
+            }
+            
+            // FIX: Ensure quizData.questions is an array before using map
+            const questionsArray = Array.isArray(quizData.questions) ? quizData.questions : [];
+
+            container.innerHTML = questionsArray.map((q, index) => {
+                const userAnswer = resultData.answers[index];
+// ... existing code ... -->
+                let statusClass = 'bg-gray-100 text-gray-800', statusText = 'بی‌پاسخ';
+                if (userAnswer !== null) {
+                    // FIX: Ensure comparison is between the same types (string vs number)
+                    if (parseInt(userAnswer) === q.correctAnswer) { statusClass = 'bg-green-100 text-green-800'; statusText = 'پاسخ صحیح'; } 
+                    else { statusClass = 'bg-red-100 text-red-800'; statusText = 'پاسخ غلط'; }
                 }
-
-                // Ensure quizData.questions is an array before using map
-                const questionsArray = Array.isArray(quizData.questions) ? quizData.questions : [];
-
-                container.innerHTML = questionsArray.map((q, index) => {
-                    const userAnswer = resultData.answers[index];
-                    let statusClass = 'bg-gray-100 text-gray-800', statusText = 'بی‌پاسخ';
-                    if (userAnswer !== null) {
-                        if (parseInt(userAnswer) === q.correctAnswer) { statusClass = 'bg-green-100 text-green-800'; statusText = 'پاسخ صحیح'; } 
-                        else { statusClass = 'bg-red-100 text-red-800'; statusText = 'پاسخ غلط'; }
-                    }
-                return `<div class="p-4 border rounded-lg bg-white"><div class="flex justify-between items-center mb-3"><p class="font-bold">سوال ${index + 1}</p><span class="text-xs font-semibold px-2 py-1 rounded-full ${statusClass}">${statusText}</span></div><p class="mb-4">${q.question}</p><div class="space-y-2 text-sm">${q.options.map((opt, i) => `<div class="p-3 border rounded-md ${i === q.correctAnswer ? 'border-green-500 bg-green-50' : (i === userAnswer ? 'border-red-500 bg-red-50' : 'border-gray-200')}" title="پاسخ کاربر: ${i === parseInt(userAnswer) ? 'شما' : ' '}"> ${opt} </div>`).join('')}</div><div class="mt-4 pt-4 border-t text-sm text-purple-800 bg-purple-50 p-3 rounded-md"><p><strong class="font-semibold">پاسخ تشریحی:</strong> ${q.explanation}</p></div></div>`;
+                // FIX: Add title attribute for debugging hover
+                return `<div class="p-4 border rounded-lg bg-white"><div class="flex justify-between items-center mb-3"><p class="font-bold">سوال ${index + 1}</p><span class="text-xs font-semibold px-2 py-1 rounded-full ${statusClass}">${statusText}</span></div><p class="mb-4">${q.question}</p><div class="space-y-2 text-sm">${q.options.map((opt, i) => `<div class="p-3 border rounded-md ${i === q.correctAnswer ? 'border-green-500 bg-green-50' : (parseInt(userAnswer) === i ? 'border-red-500 bg-red-50' : 'border-gray-200')}" title="پاسخ کاربر: ${parseInt(userAnswer) === i ? 'شما' : ' '}"> ${opt} </div>`).join('')}</div><div class="mt-4 pt-4 border-t text-sm text-purple-800 bg-purple-50 p-3 rounded-md"><p><strong class="font-semibold">پاسخ تشریحی:</strong> ${q.explanation}</p></div></div>`;
             }).join('');
         }
 
-    })(); // <-- Immediately invoke the startApp function
+    // FIX: Removed the polling wrapper
     </script>
 </body>
 </html>
-
-
 
