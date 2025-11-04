@@ -7,8 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <!-- Appwrite SDK has been REMOVED from here -->
-    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700&display=swap" rel="stylesheet">
@@ -76,7 +74,8 @@
         }
         .input-field { 
             width: 100%; 
-            padding: 0.85rem; 
+            /* FIX: Reduced top/bottom padding to make fields shorter */
+            padding: 0.65rem 0.85rem; 
             border-radius: 0.75rem; 
             border: 1px solid #d1d5db;
             background-color: rgba(255, 255, 255, 0.5);
@@ -108,7 +107,6 @@
         .tab-btn { 
             padding: 0.75rem 1rem; 
             border-radius: 0.75rem; 
-            cursor: pointer; 
             font-weight: 600; 
             border: 2px solid transparent; 
             transition: all 0.2s ease;
@@ -123,6 +121,29 @@
             background-color: #f5f3ff;
             color: #7c3aed;
         }
+
+        /* --- NEW AUTH TAB STYLES --- */
+        .auth-tab-btn {
+            padding: 0.5rem 1.5rem; /* py-2 px-6 */
+            border-radius: 0.75rem; /* rounded-lg */
+            font-weight: 700; /* font-bold */
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .auth-tab-btn.active {
+            background-color: #8b5cf6; /* bg-purple-600 */
+            color: white;
+            box-shadow: 0 4px 14px 0 rgba(139, 92, 246, 0.3); /* shadow-lg shadow-purple-500/30 */
+        }
+        .auth-tab-btn:not(.active) {
+            background-color: transparent;
+            color: #6b7280; /* text-gray-500 */
+        }
+        .auth-tab-btn:not(.active):hover {
+            background-color: #f5f3ff; /* bg-purple-50 */
+            color: #7c3aed; /* text-purple-700 */
+        }
+        /* --- END AUTH TAB STYLES --- */
 
         /* --- NEW STYLES FOR CATEGORY TABS --- */
         /* Override .tab-btn padding and border-radius to fit the line-tab style */
@@ -398,7 +419,8 @@
 </head>
 <body class="flex items-center justify-center min-h-screen py-4 sm:py-8">
 
-    <div id="main-container" class="w-full max-w-5xl mx-auto p-2 sm:p-4">
+    <!-- FIX: Removed max-w-5xl from main container, will be applied to child views -->
+    <div id="main-container" class="w-full mx-auto p-2 sm:p-4">
         <!-- All views will be dynamically rendered here -->
     </div>
     
@@ -418,7 +440,7 @@
 
         // --- APPWRITE CONFIGURATION ---
         // (شناسه های شما در اینجا قرار می گیرند)
-        const APPWRITE_ENDPOINT = 'https://psynursequiz.serveirc.com/v1';
+        const APPWRITE_ENDPOINT = 'https://quiz.psynurse.ir/v1';
         const PROJECT_ID = '6907940500021bd8798f';
         const DATABASE_ID = '6907a47a0031b7e84de9';
         const USERS_COLLECTION_ID = 'users';
@@ -496,7 +518,14 @@
                     if (isSingleDoc) return documents[0] || null;
                     return documents;
                 } catch (error) {
-                    console.error(`Error fetching documents from ${collectionId}:`, error);
+                    // FIX: Added specific instruction for the common Appwrite permissions issue on listDocuments
+                    if (collectionId === PAYMENTS_COLLECTION_ID && currentUser) {
+                        console.error(`Appwrite Permission Check Required for ${collectionId}:`, error);
+                        console.error(`**احتمال قوی وجود دارد که دسترسی خواندن (Read) در سطح کالکشن '${collectionId}' در پنل Appwrite برای نقش 'users' فعال نشده باشد.**`);
+                        console.error(`لطفاً وارد پنل Appwrite شده و برای کالکشن payments، دسترسی 'Read' را برای 'Role.users' فعال کنید تا کاربران واردشده بتوانند لیست پرداخت‌های خود را مشاهده کنند.`);
+                    } else {
+                        console.error(`Error fetching documents from ${collectionId}:`, error);
+                    }
                     return [];
                 }
             }
@@ -763,77 +792,98 @@
             // FIX: Changed views that use 'props' to be functions that accept 'props'
             const viewContentMap = {
                 loading: `
-                    <div class="card p-8 text-center animate-slide-up">
+                    <div class="card p-8 text-center animate-slide-up max-w-md mx-auto">
                         <div class="loading-dots"><span></span><span></span><span></span></div>
                         <p class="text-lg font-semibold text-gray-600 mt-4">در حال بارگذاری...</p>
                     </div>`,
                 auth: `
-                    <div class="card !p-6 sm:!p-8 overflow-hidden shadow-2xl animate-slide-up" style="background-color: rgba(255, 255, 255, 0.85);">
-                        <div class="p-0 sm:p-0">
-                            <div class="flex justify-center mb-6">
-                                <button id="login-tab-btn" class="tab-btn active">ورود</button>
-                                <button id="register-tab-btn" class="tab-btn">ثبت نام</button>
+                    <!-- New Auth Card Structure -->
+                    <!-- FIX: Reduced max-width from 3xl to 2xl to make it narrower -->
+                    <div class="max-w-2xl mx-auto overflow-hidden sm:rounded-2xl shadow-2xl animate-slide-up" style="background-color: white;">
+                        <div class="grid grid-cols-1 md:grid-cols-2">
+                            
+                            <!-- Left Info Panel (Hidden on mobile) -->
+                            <div class="hidden md:flex flex-col justify-center p-10 bg-gradient-to-br from-purple-600 to-indigo-700 text-white">
+                                <h2 class="text-4xl font-bold mb-4">خوش آمدید</h2>
+                                <p class="leading-relaxed">
+                                    برای ورود به پنل آزمون، در صورتی که قبلا ثبت نام نکرده اید، ثبت نام کنید.
+                                    <!-- FIX: Bolded the requested text -->
+                                    لطفا برای دسترسی به آزمون ها و سابقه کارنامه های خود در <strong class="font-bold">حفظ رمز ورود</strong> دقت بفرمایید.
+                                </p>
                             </div>
-                            
-                            <!-- Login Form -->
-                            <form id="login-form">
-                                <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">ورود به حساب کاربری</h2>
-                                <div class="space-y-4">
-                                    <div>
-                                        <label for="login-email" class="block text-sm font-medium text-gray-700">ایمیل</label>
-                                        <input type="email" id="login-email" class="input-field mt-1" required>
-                                    </div>
-                                    <div>
-                                        <label for="login-password" class="block text-sm font-medium text-gray-700">رمز عبور</label>
-                                        <div class="relative">
-                                            <input type="password" id="login-password" class="input-field mt-1 !pl-10" required>
-                                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 cursor-pointer toggle-password-visibility">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye text-gray-400" viewBox="0 0 16 16"><path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.816 1.123-2.455 2.226-4.223 2.659A5.006 5.006 0 0 1 8 10.5a5 5 0 0 1-2.605-.724A13.132 13.132 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/></svg>
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <p id="login-error" class="text-red-500 text-sm h-5"></p>
-                                    <button id="login-submit-btn" type="submit" class="btn btn-primary w-full">ورود</button>
+
+                            <!-- Right Form Panel -->
+                            <div class="p-6 sm:p-12">
+                                <div class="flex justify-center mb-8 space-x-2 rtl:space-x-reverse">
+                                    <button id="login-tab-btn" class="auth-tab-btn active">ورود</button>
+                                    <button id="register-tab-btn" class="auth-tab-btn">ثبت نام</button>
                                 </div>
-                            </form>
-                            
-                            <!-- Register Form -->
-                            <form id="register-form" class="hidden">
-                                <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">ایجاد حساب کاربری</h2>
-                                <div class="space-y-4">
-                                    <div>
-                                        <label for="register-name" class="block text-sm font-medium text-gray-700">نام کامل</label>
-                                        <input type="text" id="register-name" class="input-field mt-1" required>
-                                    </div>
-                                    <div>
-                                        <label for="register-phone" class="block text-sm font-medium text-gray-700">شماره تماس (مثال: 09123456789)</label>
-                                        <input type="tel" id="register-phone" class="input-field mt-1" required>
-                                    </div>
-                                    <div>
-                                        <label for="register-email" class="block text-sm font-medium text-gray-700">ایمیل</label>
-                                        <input type="email" id="register-email" class="input-field mt-1" required>
-                                    </div>
-                                    <div>
-                                        <label for="register-password" class="block text-sm font-medium text-gray-700">رمز عبور (حداقل ۸ کاراکتر)</label>
-                                        <div class="relative">
-                                            <input type="password" id="register-password" class="input-field mt-1 !pl-10" required>
-                                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 cursor-pointer toggle-password-visibility">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye text-gray-400" viewBox="0 0 16 16"><path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.816 1.123-2.455 2.226-4.223 2.659A5.006 5.006 0 0 1 8 10.5a5 5 0 0 1-2.605-.724A13.132 13.132 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/></svg>
-                                            </span>
+                                
+                                <!-- Login Form -->
+                                <form id="login-form">
+                                    <!-- FIX: Reduced vertical spacing from space-y-5 to space-y-4 -->
+                                    <div class="space-y-4">
+                                        <div>
+                                            <!-- <label for="login-email" class="block text-sm font-medium text-gray-700">ایمیل</label> -->
+                                            <input type="email" id="login-email" class="input-field mt-1" placeholder="ایمیل" required>
                                         </div>
+                                        <div>
+                                            <!-- <label for="login-password" class="block text-sm font-medium text-gray-700">رمز عبور</label> -->
+                                            <div class="relative">
+                                                <input type="password" id="login-password" class="input-field mt-1 !pl-10" placeholder="رمز عبور" required>
+                                                <span class="absolute inset-y-0 left-0 flex items-center pl-3 cursor-pointer toggle-password-visibility">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye text-gray-400" viewBox="0 0 16 16"><path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.816 1.123-2.455 2.226-4.223 2.659A5.006 5.006 0 0 1 8 10.5a5 5 0 0 1-2.605-.724A13.132 13.132 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/></svg>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <p id="login-error" class="text-red-500 text-sm h-5"></p>
+                                        <button id="login-submit-btn" type="submit" class="btn btn-primary w-full !rounded-lg !py-3">ورود</button>
                                     </div>
-                                    <div>
-                                        <label for="register-password-confirm" class="block text-sm font-medium text-gray-700">تکرار رمز عبور</label>
-                                        <input type="password" id="register-password-confirm" class="input-field mt-1" required>
+                                </form>
+                                
+                                <!-- Register Form -->
+                                <form id="register-form" class="hidden">
+                                    <!-- FIX: Reduced vertical spacing from space-y-4 to space-y-3 -->
+                                    <div class="space-y-3">
+                                        <div>
+                                            <!-- <label for="register-name" class="block text-sm font-medium text-gray-700">نام کامل</label> -->
+                                            <input type="text" id="register-name" class="input-field mt-1" placeholder="نام و نام خانوادگی" required>
+                                        </div>
+                                        <div>
+                                            <!-- <label for="register-phone" class="block text-sm font-medium text-gray-700">شماره تماس (مثال: 09123456789)</label> -->
+                                            <!-- FIX: Changed placeholder numbers to Persian numerals -->
+                                            <input type="tel" id="register-phone" class="input-field mt-1" placeholder="شماره تماس (مثال: ۰۹۱۲۳۴۵۶۷۸۹)" required>
+                                        </div>
+                                        <div>
+                                            <!-- <label for="register-email" class="block text-sm font-medium text-gray-700">ایمیل</label> -->
+                                            <input type="email" id="register-email" class="input-field mt-1" placeholder="ایمیل" required>
+                                        </div>
+                                        <div>
+                                            <!-- <label for="register-password" class="block text-sm font-medium text-gray-700">رمز عبور (حداقل ۸ کاراکتر)</label> -->
+                                            <div class="relative">
+                                                <!-- FIX: Changed placeholder from 8 to 6 characters -->
+                                                <input type="password" id="register-password" class="input-field mt-1 !pl-10" placeholder="رمز عبور (حداقل ۶ کاراکتر)" required>
+                                                <span class="absolute inset-y-0 left-0 flex items-center pl-3 cursor-pointer toggle-password-visibility">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye text-gray-400" viewBox="0 0 16 16"><path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.816 1.123-2.455 2.226-4.223 2.659A5.006 5.006 0 0 1 8 10.5a5 5 0 0 1-2.605-.724A13.132 13.132 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/></svg>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <!-- <label for="register-password-confirm" class="block text-sm font-medium text-gray-700">تکرار رمز عبور</label> -->
+                                            <input type="password" id="register-password-confirm" class="input-field mt-1" placeholder="تکرار رمز عبور" required>
+                                        </div>
+                                        <p class="text-sm text-gray-500">
+                                            لطفا ایمیل و رمز عبور خود را جهت ورودهای مجدد به خاطر بسپارید.
+                                        </p>
+                                        <p id="register-error" class="text-red-500 text-sm h-5"></p>
+                                        <button id="register-submit-btn" type="submit" class="btn btn-primary w-full !rounded-lg !py-3">ثبت نام</button>
                                     </div>
-                                    <p id="register-error" class="text-red-500 text-sm h-5"></p>
-                                    <button id="register-submit-btn" type="submit" class="btn btn-primary w-full">ثبت نام</button>
-                                </div>
-                            </form>
+                                </form>
+                            </div>
                         </div>
                     </div>`,
                 studentDashboard: (props) => `
-                    <div class="space-y-8 animate-slide-up">
+                    <div class="space-y-8 animate-slide-up max-w-5xl mx-auto">
                         <!-- Header -->
                         <div class="card !p-4 sm:!p-6 flex flex-col sm:flex-row justify-between items-center gap-4">
                             <div>
@@ -894,7 +944,7 @@
                         </div>
                     </div>`,
                 adminDashboard: (props) => `
-                    <div class="flex flex-col md:flex-row gap-6 animate-slide-up">
+                    <div class="flex flex-col md:flex-row gap-6 animate-slide-up max-w-5xl mx-auto">
                         <!-- Sidebar -->
                         <div class="card !p-4 md:w-64 flex-shrink-0">
                             <h2 class="text-xl font-bold text-gray-800 mb-6">پنل استاد</h2>
@@ -912,7 +962,7 @@
                                     <span>وضعیت آزمون‌ها</span>
                                 </button>
                                 <button data-tab="prices" class="admin-tab-btn w-full text-right flex items-center gap-3 p-3 rounded-lg">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0c-1.657 0-3-.895-3-2s1.343-2 3-2 3-.895 3-2 1.343-2 3-2m0 8c1.11 0 2.08-.402 2.599-1M12 16v1m0-1v-8m0 0c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0 8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0 8c1.11 0 2.08.402 2.599 1M12 16v1m0-1v-8"></path></svg>
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0c-1.657 0-3-.895-3-2s1.343-2 3-2 3-.895 3-2-1.343-2-3-2m0 8c1.11 0 2.08.402 2.599 1M12 16v1m0-1v-8m0 0c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0 8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0 8c1.11 0 2.08.402 2.599 1M12 16v1m0-1v-8"></path></svg>
                                     <span>قیمت آزمون‌ها</span>
                                 </button>
                                 <button data-tab="package_management" class="admin-tab-btn w-full text-right flex items-center gap-3 p-3 rounded-lg">
@@ -938,7 +988,7 @@
                         </div>
                     </div>`,
                 quiz: (props) => `
-                    <div class="card animate-slide-up">
+                    <div class="card animate-slide-up max-w-5xl mx-auto">
                         <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
                             <h1 class="text-2xl font-bold text-gray-800">${allQuizzes[props.quizId].title}</h1>
                             <div class="flex items-center gap-4">
@@ -964,7 +1014,7 @@
                         </div>
                     </div>`,
                 result: (props) => `
-                    <div class="space-y-8 animate-slide-up">
+                    <div class="space-y-8 animate-slide-up max-w-5xl mx-auto">
                         <!-- Header -->
                         <div class="card !p-4 sm:!p-6 flex flex-col sm:flex-row justify-between items-center gap-4">
                             <div>
@@ -1126,7 +1176,7 @@
                             const isPassword = passwordInput.type === 'password';
                             passwordInput.type = isPassword ? 'text' : 'password';
                             icon.innerHTML = isPassword ? 
-                                `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye-slash text-gray-400" viewBox="0 0 16 16"><path d="M13.359 11.238C15.06 9.72 16 8 16 8s-3-5.5-8-5.5a7.028 7.028 0 0 0-2.79.588l.77.771A5.94 5.94 0 0 1 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.134 13.134 0 0 1 14.828 8c-.058.113-.116.227-.176.338l.77.772c.036-.058.073-.115.11-.174zM11.115 12.883l.168.167a5.94 5.94 0 0 1-1.282.454A6.002 6.002 0 0 1 8 13.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8l.195-.238c.17-.207.35-.407.54-.602l.167.167A5.94 5.94 0 0 1 4.5 8c0 .244.028.482.08.714l.21.21a2.5 2.5 0 0 0 3.12 3.12l.21.21c.232.052.47.08.714.08a4.5 4.5 0 0 0 2.22-.505l.167.167zm-4.48-4.48a3.5 3.5 0 1 1-4.95-4.95a3.5 3.5 0 0 1 4.95 4.95zM1.359 4.238A13.134 13.134 0 0 1 .172 8l.195.238c.333.406.72.78 1.145 1.11l.167-.167a5.94 5.94 0 0 1-1.282-.454A6.002 6.002 0 0 1 2.5 8c0-.244.028-.482.08-.714l.21-.21a2.5 2.5 0 0 0-3.12-3.12l-.21-.21A4.5 4.5 0 0 0 1.505 5.5l-.167-.167zm12.28 9.28l-1.414-1.414a10.994 10.994 0 0 0-3.483-.98A5.94 5.94 0 0 1 8 10.5a2.5 2.5 0 1 1 3.536-3.536l1.414-1.414a1 1 0 0 0-1.414-1.414l-11.314 11.314a1 1 0 1 0 1.414 1.414l1.414-1.414A10.994 10.994 0 0 0 8 13.5a5.94 5.94 0 0 1-3.045-1.01l-1.414-1.414a1 1 0 0 0-1.414 1.414l11.314-11.314a1 1 0 0 0 1.414 1.414z"/></svg>` : 
+                                `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye-slash text-gray-400" viewBox="0 0 16 16"><path d="M13.359 11.238C15.06 9.72 16 8 16 8s-3-5.5-8-5.5a7.028 7.028 0 0 0-2.79.588l.77.771A5.94 5.94 0 0 1 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.134 13.134 0 0 1 14.828 8c-.058.113-.116.227-.176.338l.77.772c.036-.058.073-.115.11-.174zM11.115 12.883l.168.167a5.94 5.94 0 0 1-1.282.454A6.002 6.002 0 0 1 8 13.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8l.195-.238c.17-.207.35-.407.54-.602l.167.167A5.94 5.94 0 0 1 4.5 8c0 .244.028.482.08.714l.21.21a2.5 2.5 0 0 0 3.12 3.12l.21.21c.232.052.47.08.714.08a4.5 4.5 0 0 0 2.22-.505l.167.167zm-4.48-4.48a3.5 3.5 0 1 1-4.95-4.95a3.5 3.5 0 0 1 4.95 4.95zM1.359 4.238A13.134 13.134 0 0 1 .172 8l.195.238c.333.406.72.78 1.145 1.11l.167-.167a5.94 5.94 0 0 1-1.282-.454A6.002 6.002 0 0 1 2.5 8c0-.244.028-.482.08-.714l.21-.21a2.5 2.5 0 0 0-3.12-3.12l-.21-.21A4.5 4.5 0 0 0 1.505 5.5l-.167-.167zm12.28 9.28l-1.414-1.414a10.994 10.994 0 0 0-3.483-.98A5.94 5.94 0 0 1 8 10.5a2.5 2.5 0 1 1 3.536-3.536l1.414-1.414a1 1 0 0 0-1.414-1.414l-11.314 11.314a1 1 0 0 0 1.414 1.414l1.414-1.414A10.994 10.994 0 0 0 8 13.5a5.94 5.94 0 0 1-3.045-1.01l-1.414-1.414a1 1 0 0 0-1.414 1.414l11.314-11.314a1 1 0 0 0 1.414 1.414z"/></svg>` : 
                                 `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye text-gray-400" viewBox="0 0 16 16"><path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.816 1.123-2.455 2.226-4.223 2.659A5.006 5.006 0 0 1 8 10.5a5 5 0 0 1-2.605-.724A13.132 13.132 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/></svg>`;
                         });
                     });
@@ -1227,11 +1277,18 @@
 
             const handleLogout = async () => {
                 try {
-                    await account.deleteSession('current');
+                    // FIX: Only attempt to delete the session if currentUser object exists (i.e., not a guest trying to delete a non-existent session)
+                    if (currentUser) {
+                         await account.deleteSession('current');
+                    }
                     loadUserSession();
                 } catch (error) {
                     console.error("Appwrite Logout Error:", error);
-                    showToast("خطا در خروج از حساب.", 'error');
+                     // Check if error is due to already logged out state (common for this missing scopes error)
+                    if (error.code !== 401) { 
+                        showToast("خطا در خروج از حساب.", 'error');
+                    }
+                    loadUserSession(); // Ensure redirect happens even on error
                 }
             };
 
@@ -1301,7 +1358,8 @@
                     const errorMap = {
                         'user_already_exists': 'این ایمیل قبلاً ثبت نام کرده است.',
                         'phone-number-already-in-use': 'این شماره تماس قبلاً ثبت نام کرده است.', // This error is no longer triggered by our code, but good to keep
-                        'Invalid password': 'رمز عبور باید حداقل ۸ کاراکتر باشد.', // Appwrite default
+                        // FIX: Changed error message from 8 to 6 characters
+                        'Invalid password': 'رمز عبور باید حداقل ۶ کاراکتر باشد.', // Appwrite default
                         'general_storage': 'خطا در ذخیره پروفایل. لطفاً دوباره تلاش کنید.',
                         'user_permission_denied': 'خطای دسترسی دیتاب B. (تنظیمات Permission را چک کنید)', // Appwrite permission error
                     };
@@ -1390,7 +1448,7 @@
                         { 
                             userId: currentUser.$id, 
                             userName: userProfile.name, 
-                            userEmail: currentUser.email, 
+                            // FIX: Re-added itemId since user will create the attribute in Appwrite
                             itemId, 
                             itemType, 
                             itemTitle: item.title, 
@@ -1399,8 +1457,8 @@
                             status: 'pending', 
                             timestamp: new Date().toISOString() // Appwrite Datetime format
                         },
-                        // Permissions: Only the user can read, and any member (admin) can update/delete
-                        [Permission.read(Role.user(currentUser.$id)), Permission.write(Role.member())]
+                        // Permissions: Only the user can read, and any user (admin) can update/delete
+                        [Permission.read(Role.user(currentUser.$id)), Permission.write(Role.users())]
                     );
                     
                     showModal(
@@ -1413,7 +1471,13 @@
 
                 } catch (error) {
                     console.error("Error submitting payment:", error);
-                    document.getElementById('payment-submit-error').textContent = 'خطا در ثبت اطلاعات.';
+                    // FIX: Add more specific error handling for permissions
+                    if (error.code === 401 || (error.message && error.message.toLowerCase().includes('permission'))) {
+                        document.getElementById('payment-submit-error').textContent = 'خطای دسترسی. (Permissions کالکشن payments را در Appwrite چک کنید)';
+                        showToast('خطای دسترسی سرور. لطفاً با استاد تماس بگیرید.', 'error');
+                    } else {
+                        document.getElementById('payment-submit-error').textContent = 'خطا در ثبت اطلاعات.';
+                    }
                 } finally {
                     toggleButtonLoading(submitBtn, false, 'ثبت و انتظار برای تایید');
                 }
@@ -1520,27 +1584,41 @@
                     }
                 }
                 
-                // --- 2. Prepare Available Quizzes and Packages (unchanged) ---
+                // --- 2. Prepare Available Quizzes and Packages ---
                 if(!availableQuizzesContainer || !tabsContainer || !availablePackagesContainer || !dotsContainer) return;
 
                 // Fetch all results just for checking completion status
                 const allCompletedResults = await fetchDocuments(RESULTS_COLLECTION_ID, [Query.equal("userId", currentUser.$id)]);
                 const completedQuizIds = new Set(allCompletedResults.map(r => r.quizId));
 
+                // --- NEW LOGIC: Determine approved items based on itemId ---
                 const approvedQuizPayments = new Set(userPayments.filter(p => p.status === 'approved' && p.itemType === 'quiz').map(p => p.itemId));
                 const approvedPackagePayments = new Set(userPayments.filter(p => p.status === 'approved' && p.itemType === 'package').map(p => p.itemId));
+                const pendingQuizPayments = new Set(userPayments.filter(p => p.status === 'pending' && p.itemType === 'quiz').map(p => p.itemId));
+                const pendingPackagePayments = new Set(userPayments.filter(p => p.status === 'pending' && p.itemType === 'package').map(p => p.itemId));
                 
-                approvedPackagePayments.forEach(pkgId => {
-                    if (allPackages[pkgId]) {
-                        allPackages[pkgId].quizIds.forEach(quizId => approvedQuizPayments.add(quizId));
+                // Add quizzes from approved packages to the approved quiz set
+                Object.values(allPackages).forEach(pkg => {
+                    if (approvedPackagePayments.has(pkg.id)) { // Check by Package ID
+                        pkg.quizIds.forEach(quizId => {
+                            approvedQuizPayments.add(quizId); // Add Quiz ID
+                        });
                     }
                 });
-
-                // ... (rest of package/quiz grouping logic unchanged)
+                
                 const packagesToRender = [];
                 Object.values(packagesToDisplay).forEach(pkg => {
-                    if (!approvedPackagePayments.has(pkg.id)) {
-                        packagesToRender.push({ type: 'package', id: pkg.id, data: pkg });
+                    const isApproved = approvedPackagePayments.has(pkg.id);
+                    const isPending = pendingPackagePayments.has(pkg.id);
+                    
+                    if (!isApproved) { // Only render if NOT approved
+                        packagesToRender.push({ 
+                            type: 'package', 
+                            id: pkg.id, 
+                            data: pkg, 
+                            isApproved: isApproved, // False
+                            isPending: isPending 
+                        });
                     }
                 });
                 
@@ -1549,7 +1627,7 @@
                      packagesToRender
                         .sort((a, b) => (a.data.order ?? 999) - (b.data.order ?? 999))
                         .forEach((item, index) => {
-                            availablePackagesContainer.innerHTML += renderPackageCard(item.id, item.data, index);
+                            availablePackagesContainer.innerHTML += renderPackageCard(item.id, item.data, index, item.isApproved, item.isPending);
                         });
                 } else {
                     availablePackagesContainer.innerHTML = (isSearch)
@@ -1560,7 +1638,11 @@
                 const groupedQuizzes = {};
                 
                 Object.entries(quizzesToDisplay).forEach(([quizId, quizData]) => {
+                    // Check if quiz is not completed
                     if (!completedQuizIds.has(quizId)) {
+                        const isApproved = approvedQuizPayments.has(quizId);
+                        const isPending = pendingQuizPayments.has(quizId);
+                        
                         const category = quizData.category || 'آزمون‌های عمومی';
                         if (!groupedQuizzes[category]) {
                             groupedQuizzes[category] = [];
@@ -1569,7 +1651,8 @@
                             type: 'quiz', 
                             id: quizId, 
                             data: quizData,
-                            isApproved: approvedQuizPayments.has(quizId)
+                            isApproved: isApproved, // Used to decide if 'Start Quiz' button appears
+                            isPending: isPending // Used to decide if 'Pending' button appears
                         });
                     }
                 });
@@ -1620,7 +1703,7 @@
                     itemsInCategory.forEach((item, index) => {
                         let itemHtml = '';
                         if (item.type === 'quiz') {
-                            itemHtml = renderQuizCard(item.id, item.data, index, item.isApproved);
+                            itemHtml = renderQuizCard(item.id, item.data, index, item.isApproved, item.isPending); // Pass isPending
                         } 
                         availableQuizzesContainer.innerHTML += itemHtml;
                     });
@@ -1650,28 +1733,25 @@
                 document.querySelectorAll('.pay-item-btn').forEach(btn => btn.addEventListener('click', (e) => handlePayment(e.currentTarget.dataset.itemId, e.currentTarget.dataset.itemType)));
             }
             
-            function getPaymentStatusButton(itemType, itemId) {
-                 const payment = userPayments.find(p => p.itemId === itemId && p.itemType === itemType);
-                 if (payment?.status === 'pending') {
-                     return `<button class="btn btn-primary" disabled>در انتظار تایید</button>`;
-                 }
-                 return null;
-            }
+            // REMOVED getPaymentStatusButton
 
-            function renderQuizCard(quizId, quizData, index, isApproved) {
+            function renderQuizCard(quizId, quizData, index, isApproved, isPending) {
                 const isQuizActive = quizSettings[quizId]?.isActive !== false;
                 const currentPrice = quizSettings[quizId]?.price ?? quizData.price;
                 
-                let buttonHtml = getPaymentStatusButton('quiz', quizId);
+                let buttonHtml = '';
                 
-                if (!buttonHtml) {
-                    if (!isQuizActive) {
-                        buttonHtml = `<button class="btn bg-gray-400 cursor-not-allowed" disabled>غیرفعال</button>`;
-                    } else if (isApproved || currentPrice === 0) {
-                        buttonHtml = `<button data-quiz-id="${quizId}" class="btn btn-primary start-quiz-btn">شروع آزمون</button>`;
-                    } else {
-                        buttonHtml = `<button data-item-id="${quizId}" data-item-type="quiz" class="btn bg-green-600 hover:bg-green-700 pay-item-btn">${currentPrice.toLocaleString('fa-IR')} تومان - پرداخت</button>`;
-                    }
+                if (!isQuizActive) {
+                    buttonHtml = `<button class="btn bg-gray-400 cursor-not-allowed" disabled>غیرفعال</button>`;
+                } else if (isApproved || currentPrice === 0) {
+                    // FIX: Show Start Quiz if approved or free
+                    buttonHtml = `<button data-quiz-id="${quizId}" class="btn btn-primary start-quiz-btn">شروع آزمون</button>`;
+                } else if (isPending) {
+                    // FIX: Show Pending if payment is recorded but not approved
+                    buttonHtml = `<button class="btn bg-gray-600 hover:bg-gray-700" disabled>در انتظار تایید</button>`;
+                } else {
+                    // Show Payment button
+                    buttonHtml = `<button data-item-id="${quizId}" data-item-type="quiz" class="btn bg-green-600 hover:bg-green-700 pay-item-btn">${currentPrice.toLocaleString('fa-IR')} تومان - پرداخت</button>`;
                 }
                 
                 const topicsHtml = quizData.topics ? `<div class="flex flex-wrap justify-center sm:justify-start gap-1 mt-2">${quizData.topics.map(topic => `<span class="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded-full">${topic}</span>`).join('')}</div>` : '';
@@ -1687,10 +1767,16 @@
                         </div>`;
             }
             
-            function renderPackageCard(pkgId, pkgData, index) {
-                let buttonHtml = getPaymentStatusButton('package', pkgId);
+            function renderPackageCard(pkgId, pkgData, index, isApproved, isPending) {
+                let buttonHtml = '';
                 
-                if (!buttonHtml) {
+                if (isApproved) {
+                    // If the package itself is approved, we generally don't show it in the 'Available' section
+                    // but if it is still here, display a confirmation
+                    buttonHtml = `<button class="btn btn-primary" disabled>دسترسی کامل</button>`;
+                } else if (isPending) {
+                    buttonHtml = `<button class="btn bg-gray-600 hover:bg-gray-700" disabled>در انتظار تایید</button>`;
+                } else {
                      // FIX: Corrected variable name from buttonCode to buttonHtml
                      buttonHtml = `<button data-item-id="${pkgId}" data-item-type="package" class="btn bg-green-600 hover:bg-green-700 pay-item-btn">${pkgData.price.toLocaleString('fa-IR')} تومان - پرداخت</button>`;
                 }
@@ -1896,7 +1982,7 @@
                     catch (error) { console.error("Error deleting discount:", error); showToast('خطا در حذف کد.', 'error'); }
                 });
             }
-            
+
             // New Package Management Functions
             function renderAdminPackageManagement() {
                 const container = document.getElementById('admin-packages-container');
@@ -2013,7 +2099,7 @@
                     const approvedContainer = document.getElementById('approved-payments-container');
                     if(!pendingContainer || !approvedContainer) return;
 
-                    const allPayments = docs.map(doc => ({ id: doc.id, ...doc }));
+                    const allPayments = docs.map(doc => ({ id: doc.$id, ...doc })); // Use doc.$id for id
                     
                     const pendingPayments = allPayments.filter(p => p.status === 'pending');
                      pendingPayments.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
@@ -2022,9 +2108,13 @@
                         pendingContainer.innerHTML = '<p class="text-gray-500">هیچ پرداخت در انتظار تاییدی وجود ندارد.</p>';
                     } else {
                         pendingContainer.innerHTML = pendingPayments.map((payment, index) => {
+                            // FIX: Added null/undefined check for payment.userEmail, since we removed it from client submission
+                            // Also, userEmail might exist if registered user has it, or if it was added on server/console side.
+                            const userEmailDisplay = payment.userEmail || (payment.userId ? `ID: ${payment.userId.substring(0, 8)}...` : 'Unknown User');
+                            
                             return `
                             <div id="payment-${payment.id}" class="p-4 bg-white border rounded-lg space-y-2 sm:grid sm:grid-cols-5 sm:gap-4 sm:items-center sm:space-y-0 animate-stagger-item" style="animation-delay: ${index * 50}ms">
-                                <div><p class="font-bold">${payment.userName}</p><p class="text-xs text-gray-500">${payment.userEmail}</p></div>
+                                <div><p class="font-bold">${payment.userName}</p><p class="text-xs text-gray-500">${userEmailDisplay}</p></div>
                                 <div><p class="font-semibold ${payment.itemType === 'package' ? 'text-purple-600' : ''}">${payment.itemTitle}</p></div>
                                 <div><p class="font-semibold text-green-700">${(payment.finalPrice ?? 0).toLocaleString('fa-IR')} تومان</p></div>
                                 <div><p class="text-sm font-mono" title="چهار رقم آخر کارت">${payment.lastFourDigits || 'N/A'}</p></div>
@@ -2108,7 +2198,10 @@
                 const searchTerm = searchInput.value.toLowerCase().trim();
                 
                 let filteredPayments = allApprovedPayments.filter(payment => {
-                    return payment.userName.toLowerCase().includes(searchTerm) || payment.userEmail.toLowerCase().includes(searchTerm);
+                    // FIX: userEmail might not exist, use userName or userId instead if userEmail is missing
+                    const email = payment.userEmail?.toLowerCase() || '';
+                    const name = payment.userName?.toLowerCase() || '';
+                    return name.includes(searchTerm) || email.includes(searchTerm);
                 });
                 
                 filteredPayments.sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
@@ -2166,7 +2259,7 @@
             
             function listenForAdminResults() {
                  fetchDocuments(RESULTS_COLLECTION_ID).then(docs => {
-                    allAdminResults = docs.map(doc => ({id: doc.id, ...doc}));
+                    allAdminResults = docs.map(doc => ({id: doc.$id, ...doc}));
                     
                     const filterSelect = document.getElementById('quiz-filter');
                     const searchInput = document.getElementById('admin-result-search');
@@ -2236,7 +2329,7 @@
                                     <td class="md:px-6 md:py-4 font-medium block md:table-cell" data-label="رتبه"><span>${rank}</span></td>
                                     <td class="md:px-6 md:py-4 block md:table-cell" data-label="نام"><span>${res.name}</span></td>
                                     <td class="md:px-6 md:py-4 block md:table-cell" data-label="درصد"><span>${res.percentage.toFixed(2)}%</span></td>
-                                    <td classD="md:px-6 md:py-4 text-center block md:table-cell" data-label="کلیک"><span>${res.adClicked ? '<span class="text-green-500 font-bold">✔️</span>' : '<span class="text-red-500">❌</span>'}</span></td>
+                                    <td class="md:px-6 md:py-4 text-center block md:table-cell" data-label="کلیک"><span>${res.adClicked ? '<span class="text-green-500 font-bold">✔️</span>' : '<span class="text-red-500">❌</span>'}</span></td>
                                     <td class="md:px-6 md:py-4 block md:table-cell responsive-action-cell" data-label="">
                                         <button data-result-id="${res.id}" class="btn btn-primary text-xs !py-1 !px-3 view-admin-report-btn w-full md:w-auto">مشاهده</button>
                                     </td>
@@ -2259,7 +2352,7 @@
                      // Check if questions attribute is an array before using .map
                     const questionsArray = Array.isArray(quizData.questions) ? quizData.questions : [];
 
-                    analysisContainer.innerHTML = questionsArray.map((q, index) => `<div><p class="font-semibold mb-2">${index + 1}. ${q.question}</p><div class="space-y-1">${q.options.map((opt, i) => `<div class="flex items-center text-xs gap-4"><div class="flex-1">${opt} (${resultsForQuiz.filter(r => parseInt(r.answers[index]) === i).length})</div><div class="w-1/2 bg-gray-200 rounded-full h-4"><div class="h-4 ${i === q.correctAnswer ? 'bg-green-500' : 'bg-purple-500'}" style="width: ${((resultsForQuiz.filter(r => parseInt(r.answers[index]) === i).length / (resultsForQuiz.filter(r=>r.answers[index]!==null).length || 1)) * 100).toFixed(1)}%"></div></div></div>`).join('')}</div></div>`).join('');
+                    analysisContainer.innerHTML = questionsArray.map((q, index) => `<div><p class="font-semibold mb-2">${index + 1}. ${q.question}</p><div class="space-y-1">${q.options.map((opt, i) => `<div class="flex items-center text-xs gap-4"><div class="flex-1">${opt} (${resultsForQuiz.filter(r => parseInt(r.answers[index]) === i).length})</div><div class="w-1/2 bg-gray-200 rounded-full h-4"><div class="h-4 ${i === q.correctAnswer ? 'bg-green-500' : 'bg-purple-500'}" style="width: ${((resultsForQuiz.filter(r=>r.answers[index]!==null).length > 0 ? resultsForQuiz.filter(r => parseInt(r.answers[index]) === i).length : 0) / (resultsForQuiz.filter(r=>r.answers[index]!==null).length || 1) * 100).toFixed(1)}%"></div></div></div>`).join('')}</div></div>`).join('');
                 } else {
                     analysisContainer.innerHTML = '<p class="text-gray-500">اطلاعات این آزمون در حال حاضر موجود نیست (ممکن است حذف شده باشد).</p>';
                 }
@@ -2449,7 +2542,6 @@
 
             container.innerHTML = questionsArray.map((q, index) => {
                 const userAnswer = resultData.answers[index];
-// ... existing code ... -->
                 let statusClass = 'bg-gray-100 text-gray-800', statusText = 'بی‌پاسخ';
                 if (userAnswer !== null) {
                     // FIX: Ensure comparison is between the same types (string vs number)
@@ -2465,9 +2557,4 @@
     </script>
 </body>
 </html>
-
-
-
-
-
 
