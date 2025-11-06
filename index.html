@@ -259,25 +259,69 @@
             0%, 80%, 100% { transform: scale(0); } 
             40% { transform: scale(1.0); }
         }
-        /* New Animation Styles */
-        .animate-slide-up {
-            animation: slideUp 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
-            opacity: 0;
-        }
-        .animate-stagger-item {
-            opacity: 0;
-            animation: slideUp 0.5s ease-out forwards;
-        }
-        @keyframes slideUp {
+        
+        /* --- MODIFIED Animation Keyframes for smoother feel --- */
+        @keyframes softSlideUp {
             from {
                 opacity: 0;
-                transform: translateY(20px);
+                transform: translateY(15px) scale(0.98);
             }
             to {
                 opacity: 1;
-                transform: translateY(0);
+                transform: translateY(0) scale(1);
             }
         }
+        .animate-slide-up {
+            /* Use the new softer animation */
+            animation: softSlideUp 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+            opacity: 0;
+        }
+        /* --- End MODIFIED Animations --- */
+        
+        .animate-stagger-item {
+            opacity: 0;
+            /* Use the new softer animation */
+            animation: softSlideUp 0.5s ease-out forwards;
+        }
+
+        /* --- NEW Animation Keyframes --- */
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInLeft {
+            from { opacity: 0; transform: translateX(-30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes fadeInRight {
+            from { opacity: 0; transform: translateX(30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* --- NEW Animation Classes --- */
+        .animate-fade-in-down {
+            animation: fadeInDown 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+            opacity: 0;
+        }
+        .animate-fade-in-up {
+            animation: fadeInUp 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+            opacity: 0;
+        }
+        .animate-fade-in-left {
+            animation: fadeInLeft 0.7s cubic-bezier(0.165, 0.84, 0.44, 1) 0.1s forwards; /* Added 0.1s delay */
+            opacity: 0;
+        }
+        .animate-fade-in-right {
+            animation: fadeInRight 0.7s cubic-bezier(0.165, 0.84, 0.44, 1) 0.1s forwards; /* Added 0.1s delay */
+            opacity: 0;
+        }
+        /* --- End NEW Animations --- */
+
+
         #progress-bar {
             transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
         }
@@ -299,7 +343,8 @@
             background-color: white;
             border-radius: 1.5rem;
             box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.2);
-            padding: 2rem;
+            /* --- MODIFICATION: Reduced padding to make modal smaller --- */
+            padding: 1.5rem;
             max-width: 90%;
             width: 500px;
             opacity: 0;
@@ -415,6 +460,27 @@
                 margin-top: 0.5rem; /* mt-2 */
             }
         }
+
+        /* --- Custom Scrollbar --- */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f3f4f6; /* gray-100 */
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #d1d5db; /* gray-300 */
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af; /* gray-400 */
+        }
+        .custom-scrollbar {
+            scrollbar-width: thin; /* Firefox */
+            scrollbar-color: #d1d5db #f3f4f6; /* Firefox */
+        }
+        /* --- End Custom Scrollbar --- */
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen py-4 sm:py-8">
@@ -430,19 +496,21 @@
     <!-- Toast Container -->
     <div id="toast-container"></div>
 
-    <!-- FIX: Changed script tag to type="module" -->
     <script type="module">
-        // FIX: Import Appwrite SDK as an ES Module from a reliable CDN (esm.sh)
-        // This replaces the global <script> tag and the polling function
-        import { Client, Account, Databases, ID, Query, Permission, Role } from 'https://esm.sh/appwrite@11.0.0';
+        // --- MODIFICATION: Imported Storage ---
+        // --- MODIFICATION: Swapped CDN to 'skypack' as a final attempt to resolve loading failures ---
+        import { Client, Account, Databases, Storage, ID, Query, Permission, Role } from 'https://cdn.skypack.dev/appwrite@11.0.0';
 
-        console.log("Appwrite SDK imported via ESM. Initializing application...");
+        // console.log("Appwrite SDK imported via ESM (skypack). Initializing application...");
 
         // --- APPWRITE CONFIGURATION ---
         // (شناسه های شما در اینجا قرار می گیرند)
         const APPWRITE_ENDPOINT = 'https://quiz.psynurse.ir/v1';
         const PROJECT_ID = '6907940500021bd8798f';
         const DATABASE_ID = '6907a47a0031b7e84de9';
+        // --- NEW: Bucket ID for screenshots ---
+        const SCREENSHOT_BUCKET_ID = 'payment_screenshots'; // <-- شناسه باکت اسکرین شات ها
+        // ---
         const USERS_COLLECTION_ID = 'users';
         const PAYMENTS_COLLECTION_ID = 'payments';
         const QUIZZES_COLLECTION_ID = 'quizzes'; // (مطمئن شوید این شناسه درست است)
@@ -456,6 +524,8 @@
         client.setEndpoint(APPWRITE_ENDPOINT).setProject(PROJECT_ID);
         const account = new Account(client);
         const db = new Databases(client);
+        // --- NEW: Initialize Storage ---
+        const storage = new Storage(client);
         
         // --- ADMIN & PAYMENT INFO ---
             const ADMIN_EMAIL = "rbidokhti@gmail.com";
@@ -476,6 +546,8 @@
             let resultPieChartInstance = null;
             let progressChartInstance = null;
             const mainContainer = document.getElementById('main-container');
+            let quizState = null; // <--- متغیر آزمون در حال اجرا
+            let isHandlingPopState = false; // --- NEW: Flag to prevent history loops
 
             // --- UTILITY & AI FUNCTIONS ---
             
@@ -535,19 +607,19 @@
                 renderView('loading'); // <-- Render loading screen
 
                 try {
-                    console.log("Appwrite: Attempting to get current user session...");
+                    // console.log("Appwrite: Attempting to get current user session...");
                     // 1. Check if user is logged in
                     const userAccount = await account.get(); 
-                    console.log("Appwrite: User session found for ID:", userAccount.$id);
+                    // console.log("Appwrite: User session found for ID:", userAccount.$id);
                     
                     // 2. Get user profile from Database using account ID
-                    console.log("Appwrite: Fetching user profile document...");
+                    // console.log("Appwrite: Fetching user profile document...");
                     const userDoc = await db.getDocument(
                         DATABASE_ID,
                         USERS_COLLECTION_ID,
                         userAccount.$id 
                     );
-                    console.log("Appwrite: User profile document found.");
+                    // console.log("Appwrite: User profile document found.");
                     
                     currentUser = userAccount;
                     userProfile = sanitizeObjectKeys(userDoc);
@@ -592,7 +664,7 @@
                     <div id="${modalId}" class="custom-modal-backdrop">
                         <div class="custom-modal-content">
                             <h3 class="text-2xl font-bold text-gray-800 mb-4">${title}</h3>
-                            <p class="text-gray-600 mb-8">${message}</p>
+                            <div class="text-gray-600 mb-8">${message}</div>
                             <div class="flex justify-end gap-3">
                                 ${cancelText ? `<button class="btn bg-gray-500 hover:bg-gray-600 modal-cancel-btn">${cancelText}</button>` : ''}
                                 <button class="btn btn-primary modal-confirm-btn">${confirmText}</button>
@@ -896,20 +968,8 @@
                             </div>
                         </div>
 
-                        <!-- Completed Quizzes -->
+                        <!-- Available Quizzes (Moved Up) -->
                         <div class="card animate-slide-up" style="animation-delay: 100ms;">
-                            <h2 class="text-xl font-bold text-gray-800 mb-6">آزمون‌های تکمیل شده</h2>
-                            <div id="completed-quizzes-container" class="space-y-3">
-                                <!-- Completed quizzes will be loaded here -->
-                                <div class="flex justify-center items-center h-24"><div class="loading-dots"><span></span><span></span><span></span></div></div>
-                            </div>
-                            <div id="progress-chart-container" class="mt-6 hidden">
-                                <canvas id="progress-chart"></canvas>
-                            </div>
-                        </div>
-
-                        <!-- Available Quizzes -->
-                        <div class="card animate-slide-up" style="animation-delay: 200ms;">
                             <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
                                 <h2 class="text-xl font-bold text-gray-800">آزمون‌های موجود</h2>
                                 <div class="relative w-full sm:w-72">
@@ -918,12 +978,19 @@
                                 </div>
                             </div>
                             
+                            <!-- NEW: Heading for Packages -->
+                            <!-- MODIFICATION: Changed text-lg to text-md to make it smaller -->
+                            <h3 class="text-md font-bold text-gray-700 mb-4 pt-4 border-t border-gray-200">پکیج های موجود</h3>
+
                             <!-- Packages -->
                             <div id="available-packages-container" class="space-y-3 mb-6">
                                 <!-- Packages will be loaded here -->
                             </div>
 
                             <!-- Category Tabs -->
+                            <!-- NEW: Heading for single quizzes -->
+                            <!-- MODIFICATION: Changed text-lg to text-md to make it smaller -->
+                            <h3 class="text-md font-bold text-gray-700 mb-4 pt-4 border-t border-gray-200">آزمون‌های تکی</h3>
                             <div class="tab-scroll-wrapper border-b border-gray-300 mb-4">
                                 <div id="inner-tab-scroller" class="flex items-center space-x-2 rtl:space-x-reverse overflow-x-auto pb-1">
                                     <div id="category-tabs" class="flex items-center space-x-1 rtl:space-x-reverse min-w-max">
@@ -940,6 +1007,18 @@
                             <div id="available-quizzes-container" class="space-y-3">
                                 <!-- Quizzes will be loaded here -->
                                 <div class="flex justify-center items-center h-24"><div class="loading-dots"><span></span><span></span><span></span></div></div>
+                            </div>
+                        </div>
+
+                        <!-- Completed Quizzes (Moved Down) -->
+                        <div class="card animate-slide-up" style="animation-delay: 200ms;">
+                            <h2 class="text-xl font-bold text-gray-800 mb-6">آزمون‌های تکمیل شده</h2>
+                            <div id="completed-quizzes-container" class="space-y-3">
+                                <!-- Completed quizzes will be loaded here -->
+                                <div class="flex justify-center items-center h-24"><div class="loading-dots"><span></span><span></span><span></span></div></div>
+                            </div>
+                            <div id="progress-chart-container" class="mt-6 hidden">
+                                <canvas id="progress-chart"></canvas>
                             </div>
                         </div>
                     </div>`,
@@ -962,7 +1041,7 @@
                                     <span>وضعیت آزمون‌ها</span>
                                 </button>
                                 <button data-tab="prices" class="admin-tab-btn w-full text-right flex items-center gap-3 p-3 rounded-lg">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0c-1.657 0-3-.895-3-2s1.343-2 3-2 3-.895 3-2-1.343-2-3-2m0 8c1.11 0 2.08.402 2.599 1M12 16v1m0-1v-8m0 0c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0 8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0 8c1.11 0 2.08.402 2.599 1M12 16v1m0-1v-8"></path></svg>
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0c-1.657 0-3-.895-3-2s1.343-2 3-2 3-.895 3-2-1.343-2-3-2m0 8c1.11 0 2.08.402 2.599 1M12 16v1m0-1v-8m0 0c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3-2m0 8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3-2m0 8c1.11 0 2.08.402 2.599 1M12 16v1m0-1v-8"></path></svg>
                                     <span>قیمت آزمون‌ها</span>
                                 </button>
                                 <button data-tab="package_management" class="admin-tab-btn w-full text-right flex items-center gap-3 p-3 rounded-lg">
@@ -1013,10 +1092,19 @@
                             </div>
                         </div>
                     </div>`,
-                result: (props) => `
-                    <div class="space-y-8 animate-slide-up max-w-5xl mx-auto">
+                result: (props) => {
+                    // --- NEW LOGIC: Determine color based on percentage ---
+                    const percentage = props.resultData.percentage;
+                    const potentialPercentage = props.resultData.potentialPercentage;
+                    
+                    const percentageColorClass = percentage >= 0 ? 'text-green-600' : 'text-red-600';
+                    const potentialPercentageColorClass = potentialPercentage >= 0 ? 'text-purple-700' : 'text-red-700';
+                    // --- END NEW LOGIC ---
+
+                    return `
+                    <div class="space-y-8 max-w-5xl mx-auto">
                         <!-- Header -->
-                        <div class="card !p-4 sm:!p-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <div class="card !p-4 sm:!p-6 flex flex-col sm:flex-row justify-between items-center gap-4 animate-fade-in-down">
                             <div>
                                 <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">کارنامه آزمون</h1>
                                 <p class="text-gray-600 mt-1">${allQuizzes[props.resultData.quizId]?.title || 'آزمون'}</p>
@@ -1026,29 +1114,47 @@
                             </button>
                         </div>
 
-                        <!-- Stats Grid -->
-                        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-                            <div class="card !p-4 text-center animate-stagger-item"><p class="text-sm font-semibold text-gray-500">رتبه شما</p><p class="text-3xl font-bold text-purple-600 mt-1">${props.rank}</p></div>
-                            <div class="card !p-4 text-center animate-stagger-item" style="animation-delay: 50ms;"><p class="text-sm font-semibold text-gray-500">درصد</p><p class="text-3xl font-bold text-green-600 mt-1">${props.resultData.percentage.toFixed(2)}%</p></div>
-                            <div class="card !p-4 text-center animate-stagger-item" style="animation-delay: 100ms;"><p class="text-sm font-semibold text-gray-500">صحیح</p><p class="text-3xl font-bold text-green-600 mt-1">${props.resultData.correct}</p></div>
-                            <div class="card !p-4 text-center animate-stagger-item" style="animation-delay: 150ms;"><p class="text-sm font-semibold text-gray-500">غلط</p><p class="text-3xl font-bold text-red-600 mt-1">${props.resultData.incorrect}</p></div>
-                            <div class="card !p-4 text-center animate-stagger-item col-span-2 md:col-span-1" style="animation-delay: 200ms;"><p class="text-sm font-semibold text-gray-500">نزده</p><p class="text-3xl font-bold text-gray-500 mt-1">${props.resultData.unanswered}</p></div>
+                        <!-- Stats Grid (Modified: Only Rank and Percentage) -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="card !p-4 text-center animate-fade-in-up"><p class="text-sm font-semibold text-gray-500">رتبه شما</p><p class="text-3xl font-bold text-purple-600 mt-1">${props.rank}</p></div>
+                            <!-- --- MODIFICATION: Use dynamic color class --- -->
+                            <div class="card !p-4 text-center animate-fade-in-up" style="animation-delay: 100ms;"><p class="text-sm font-semibold text-gray-500">درصد</p><p class="text-3xl font-bold ${percentageColorClass} mt-1">${percentage.toFixed(2)}%</p></div>
+                            <!-- --- END MODIFICATION --- -->
                         </div>
 
-                        <!-- Charts -->
-                        <div class="card !p-4 sm:!p-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center animate-slide-up" style="animation-delay: 250ms;">
-                            <div class="w-full max-w-xs mx-auto"><canvas id="result-pie-chart"></canvas></div>
-                            <div class="text-center md:text-right">
+                        <!-- Charts (Modified: Added small stats) -->
+                        <div class="card !p-4 sm:!p-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                            <!-- MODIFIED: Added delay to chart animation -->
+                            <div class="w-full max-w-xs mx-auto animate-fade-in-left" style="animation-delay: 250ms;"><canvas id="result-pie-chart"></canvas></div>
+                            <div class="text-center md:text-right animate-fade-in-right">
+                                <!-- NEW Small Stats -->
+                                <div class="flex justify-center md:justify-start gap-6 mb-6">
+                                    <div class="text-center">
+                                        <p class="text-sm font-semibold text-gray-500">صحیح</p>
+                                        <p class="text-2xl font-bold text-green-600 mt-1">${props.resultData.correct}</p>
+                                    </div>
+                                    <div class="text-center">
+                                        <p class="text-sm font-semibold text-gray-500">غلط</p>
+                                        <p class="text-2xl font-bold text-red-600 mt-1">${props.resultData.incorrect}</p>
+                                    </div>
+                                    <div class="text-center">
+                                        <p class="text-sm font-semibold text-gray-500">نزده</p>
+                                        <p class="text-2xl font-bold text-gray-500 mt-1">${props.resultData.unanswered}</p>
+                                    </div>
+                                </div>
+                                <!-- End NEW Small Stats -->
+
                                 <h3 class="text-xl font-bold text-gray-800">تحلیل عملکرد</h3>
-                                <p class="text-gray-600 mt-2">درصد شما در این آزمون <strong class="text-lg text-purple-700">${props.resultData.percentage.toFixed(2)}%</strong> است. در صورتی که فقط به سوالاتی که پاسخ صحیح داده‌اید اکتفا می‌کردید، درصد شما <strong class="text-lg text-purple-700">${props.resultData.potentialPercentage.toFixed(2)}%</strong> می‌شد.</p>
-                                <p class="text-gray-600 mt-2">این اختلاف نشان‌دهنده تاثیر پاسخ‌های غلط در نمره نهایی شماست.</p>
+                                <!-- --- MODIFICATION: Use dynamic color classes --- -->
+                                <p class="text-gray-600 mt-2">درصد شما در این آزمون <strong class="text-lg ${percentageColorClass}">${percentage.toFixed(2)}%</strong> است. در صورتی که فقط به سوالاتی که پاسخ صحیح داده‌اید اکتفا می‌کردید، درصد شما <strong class="text-lg ${potentialPercentageColorClass}">${potentialPercentage.toFixed(2)}%</strong> می‌شد.</p>
+                                <!-- --- END MODIFICATION --- -->
                             </div>
                         </div>
 
                         <!-- AI Consultation -->
-                        <div class="card !p-4 sm:!p-8 animate-slide-up" style="animation-delay: 350ms;">
+                        <div class="card !p-4 sm:!p-8 animate-slide-up" style="animation-delay: 200ms;">
                             <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                                <svg class="w-7 h-7 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M12 21v-1m0-16a9 9 0 110 18 9 9 0 010-18z"></path></svg>
+                                <svg class="w-7 h-7 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707.707M12 21v-1m0-16a9 9 0 110 18 9 9 0 010-18z"></path></svg>
                                 <span>تحلیل و مشاوره هوشمند</span>
                             </h2>
                             <div id="ai-consultation-content" class="prose prose-lg max-w-none">
@@ -1058,7 +1164,7 @@
                         
                         <!-- Ad/Link Card -->
                         ${props.origin === 'student' && quizSettings.adLink && quizSettings.adText ? `
-                        <div class="card !p-0 overflow-hidden bg-gradient-to-l from-purple-700 to-indigo-800 animate-slide-up" style="animation-delay: 400ms;">
+                        <div class="card !p-0 overflow-hidden bg-gradient-to-l from-purple-700 to-indigo-800 animate-slide-up" style="animation-delay: 300ms;">
                             <a href="${quizSettings.adLink}" target="_blank" class="ad-link-btn block p-6 text-white text-center hover:bg-black hover:bg-opacity-10 transition-all">
                                 <h3 class="text-2xl font-bold">${quizSettings.adText}</h3>
                                 <p class="mt-2 opacity-90">برای اطلاعات بیشتر و ثبت نام کلیک کنید</p>
@@ -1066,13 +1172,14 @@
                         </div>` : ''}
 
                         <!-- Question Review -->
-                        <div class="card !p-4 sm:!p-8 animate-slide-up" style="animation-delay: 450ms;">
+                        <div class="card !p-4 sm:!p-8 animate-slide-up" style="animation-delay: 400ms;">
                             <h2 class="text-2xl font-bold text-gray-800 mb-6">بررسی سوالات آزمون</h2>
-                            <div id="question-review-container" class="space-y-6">
+                            <div id="question-review-container" class="space-y-6 custom-scrollbar" style="max-height: 70vh; overflow-y: auto; padding-left: 0.5rem; padding-right: 0.5rem;">
                                 <!-- Review will be rendered here -->
                             </div>
                         </div>
-                    </div>`,
+                    </div>`;
+                },
                 paymentInstructions: (props) => `
                     <div class="card max-w-2xl mx-auto animate-slide-up">
                         <button id="back-to-dash-btn" class="absolute top-4 left-4 text-gray-400 hover:text-gray-600">
@@ -1108,7 +1215,7 @@
                                 <button id="copy-card-btn" class="btn bg-gray-600 hover:bg-gray-700 !py-2 !px-4 text-sm">کپی شماره کارت</button>
                             </div>
                             <p>۲. پس از واریز، روی دکمه "ثبت اطلاعات واریز" کلیک کنید.</p>
-                            <p>۳. در صفحه بعد، ۴ رقم آخر کارت خود را وارد کنید.</p>
+                            <p>۳. در صفحه بعد، اسکرین‌شات واریز خود را بارگذاری کنید.</p>
                             <p>۴. پس از ثبت اطلاعات، دسترسی شما توسط استاد بررسی و تایید خواهد شد.</p>
                         </div>
                         
@@ -1125,10 +1232,13 @@
                         <p class="text-center text-lg font-semibold text-gray-700 mb-8">مبلغ: ${props.finalPrice.toLocaleString('fa-IR')} تومان</p>
                         
                         <form id="payment-submission-form" class="space-y-4">
+                            <!-- --- MODIFICATION: Replaced 4 digits with file upload --- -->
                             <div>
-                                <label for="last-four-digits" class="block text-sm font-medium text-gray-700">چهار رقم آخر کارت</label>
-                                <input type="tel" id="last-four-digits" class="input-field mt-1 text-center font-mono" placeholder="_ _ _ _" maxlength="4" required>
+                                <label for="payment-screenshot" class="block text-sm font-medium text-gray-700">بارگذاری اسکرین‌شات پرداخت</label>
+                                <input type="file" id="payment-screenshot" class="input-field mt-1 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100" accept="image/png, image/jpeg, image/jpg" required>
+                                <img id="screenshot-preview" src="" alt="پیش‌نمایش اسکرین‌شات" class="hidden w-full h-auto mt-4 rounded-lg border">
                             </div>
+                            <!-- --- END MODIFICATION --- -->
                             <p id="payment-submit-error" class="text-red-500 text-sm h-5"></p>
                             <button id="submit-payment-btn" type="submit" class="btn btn-primary w-full">ثبت و انتظار برای تایید</button>
                         </form>
@@ -1159,6 +1269,28 @@
                 }
 
                 mainContainer.innerHTML = viewContent;
+
+                // --- MODIFICATION: History Management Logic ---
+                if (!isHandlingPopState) {
+                    // Only push a new state if this render wasn't triggered by the back button
+                    const state = { view: viewName, props: props };
+                    const hash = `#${viewName}`;
+                    
+                    // Don't create history entries for views we don't want users going "back" to.
+                    // Use replaceState to set the current state without adding to the stack.
+                    // --- MODIFICATION: Only replace 'result' if origin is 'student' (coming from quiz) ---
+                    const isStudentResult = (viewName === 'result' && props.origin === 'student');
+
+                    if (viewName === 'loading' || viewName === 'auth' || isStudentResult) {
+                        // For loading, auth, or a student result, replace the current history state
+                        window.history.replaceState(state, '', hash);
+                    } else {
+                        // For all other views (dashboard, quiz, admin, admin-result), push a new state.
+                        window.history.pushState(state, '', hash);
+                    }
+                }
+                // --- END MODIFICATION: History Management Logic ---
+
                 attachEventListeners(viewName, props);
             };
             
@@ -1194,8 +1326,9 @@
                 // ... (rest of attachEventListeners remains largely the same, using Appwrite IDs where appropriate)
                 else if (viewName === 'adminDashboard') {
                     const backToDashboard = () => {
-                        // No need for unsubscribeAdminListener if using polling
-                        loadUserSession(); // Reloading the dashboard starts the listeners again
+                        // --- MODIFICATION: Use history.back() ---
+                        window.history.back();
+                        // --- END MODIFICATION ---
                     };
                     document.querySelectorAll('.js-back-to-dash').forEach(btn => btn.addEventListener('click', backToDashboard));
                     
@@ -1206,10 +1339,14 @@
                     document.getElementById('previous-btn').addEventListener('click', handlePreviousQuestion);
                 } else if (viewName === 'result') {
                     const studentBackBtn = document.getElementById('back-to-dashboard-btn');
-                    if (studentBackBtn) studentBackBtn.addEventListener('click', () => loadUserSession()); // Changed to loadUserSession
+                    // --- MODIFICATION: Use history.back() ---
+                    if (studentBackBtn) studentBackBtn.addEventListener('click', () => window.history.back());
+                    // --- END MODIFICATION ---
                     
                     const adminBackBtn = document.getElementById('back-to-admin-panel-btn');
-                    if (adminBackBtn) adminBackBtn.addEventListener('click', () => renderView('adminDashboard'));
+                    // --- MODIFICATION: Use history.back() ---
+                    if (adminBackBtn) adminBackBtn.addEventListener('click', () => window.history.back());
+                    // --- END MODIFICATION ---
 
                     document.querySelectorAll('.ad-link-btn').forEach(btn => {
                          btn.addEventListener('click', async () => {
@@ -1257,16 +1394,63 @@
                         });
                     }
                 } else if (viewName === 'paymentInstructions') {
-                    document.getElementById('back-to-dash-btn').addEventListener('click', () => loadUserSession()); // Changed to loadUserSession
+                    // --- MODIFICATION: Use history.back() ---
+                    const backBtn = document.getElementById('back-to-dash-btn');
+                    if(backBtn) backBtn.addEventListener('click', () => window.history.back());
+                    // --- END MODIFICATION ---
                     document.getElementById('proceed-to-submit-btn').addEventListener('click', () => renderView('paymentSubmission', { itemId: props.itemId, itemType: props.itemType, finalPrice: props.finalPrice }));
                     document.getElementById('apply-discount-btn').addEventListener('click', () => handleApplyDiscount(props.itemId, props.itemType, props.originalPrice, props.finalPrice));
                     document.getElementById('copy-card-btn').addEventListener('click', () => copyToClipboard(PAYMENT_INFO.rawCardNumber));
                 }
                 else if (viewName === 'paymentSubmission') {
-                    document.getElementById('back-to-instructions-btn').addEventListener('click', () => handlePayment(props.itemId, props.itemType));
+                    // --- MODIFICATION: Use history.back() ---
+                    const backBtn = document.getElementById('back-to-instructions-btn');
+                    if(backBtn) backBtn.addEventListener('click', () => window.history.back());
+                    // --- END MODIFICATION ---
                     document.getElementById('payment-submission-form').addEventListener('submit', (e) => handlePaymentSubmission(e, props.itemId, props.itemType, props.finalPrice));
+                    
+                    // --- NEW: Add listener for screenshot preview ---
+                    const fileInput = document.getElementById('payment-screenshot');
+                    const previewImg = document.getElementById('screenshot-preview');
+                    if (fileInput && previewImg) {
+                        fileInput.addEventListener('change', (e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                                const reader = new FileReader();
+                                reader.onload = (event) => {
+                                    previewImg.src = event.target.result;
+                                    previewImg.classList.remove('hidden');
+                                };
+                                reader.readAsDataURL(file);
+                            } else {
+                                previewImg.src = '';
+                                previewImg.classList.add('hidden');
+                            }
+                        });
+                    }
+                    // --- END NEW ---
                 }
             };
+
+            // --- NEW: System Back Button (popstate) Handler ---
+            window.addEventListener('popstate', (event) => {
+                // console.log("Popstate event fired", event.state);
+                isHandlingPopState = true; // Set flag to prevent renderView from pushing state again
+                
+                if (event.state && event.state.view) {
+                    // We have a valid state, render the view from history
+                    renderView(event.state.view, event.state.props || {});
+                } else {
+                    // This happens if the user goes back to the very first page load (state is null)
+                    // The safest action is to re-run the session check, which will
+                    // automatically land on the correct auth or dashboard page.
+                    loadUserSession();
+                }
+                
+                // Reset the flag after the render is complete
+                setTimeout(() => { isHandlingPopState = false; }, 0);
+            });
+            // --- END NEW: System Back Button Handler ---
 
             // --- AUTH CONTROLLER (Modified to use Appwrite loadUserSession) ---
             // Removed Firebase onAuthStateChanged and replaced with Appwrite loadUserSession call
@@ -1413,14 +1597,24 @@
                     
                     // Calculate discounted price based on already purchased quizzes
                     const approvedQuizPayments = userPayments.filter(p => p.status === 'approved' && p.itemType === 'quiz').map(p => p.itemId);
-                    let discountForOwnedQuizzes = 0;
                     
+                    // --- MODIFIED LOGIC: Limit discount to only ONE (the most expensive) owned quiz ---
+                    // 1. Find the prices of all quizzes in the package that the user already owns.
+                    const ownedQuizPrices = [];
                     item.quizIds.forEach(quizId => {
                         if (approvedQuizPayments.includes(quizId) && allQuizzes[quizId]) {
                             const quizPrice = quizSettings[quizId]?.price ?? allQuizzes[quizId].price;
-                            discountForOwnedQuizzes += quizPrice;
+                            ownedQuizPrices.push(quizPrice);
                         }
                     });
+
+                    // 2. Find the maximum price among them to be used as the discount.
+                    let discountForOwnedQuizzes = 0;
+                    if (ownedQuizPrices.length > 0) {
+                        // Math.max() will find the single highest price in the array
+                        discountForOwnedQuizzes = Math.max(...ownedQuizPrices);
+                    }
+                    // --- END MODIFIED LOGIC ---
                     
                     finalPrice = Math.max(0, originalPrice - discountForOwnedQuizzes);
                 }
@@ -1430,16 +1624,34 @@
             
             async function handlePaymentSubmission(e, itemId, itemType, finalPrice) {
                 e.preventDefault();
-                let lastFourDigits = document.getElementById('last-four-digits').value.trim();
-                lastFourDigits = convertPersianToLatin(lastFourDigits);
+                // --- MODIFICATION: Get file instead of digits ---
+                const fileInput = document.getElementById('payment-screenshot');
+                const file = fileInput.files[0];
                 
-                if (!lastFourDigits || lastFourDigits.length !== 4) { document.getElementById('payment-submit-error').textContent = 'لطفاً چهار رقم آخر کارت را به درستی وارد کنید.'; return; }
+                if (!file) { document.getElementById('payment-submit-error').textContent = 'لطفاً یک اسکرین‌شات انتخاب کنید.'; return; }
+                if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                    document.getElementById('payment-submit-error').textContent = 'حجم فایل باید کمتر از ۵ مگابایت باشد.'; return;
+                }
+                // --- END MODIFICATION ---
+
                 const submitBtn = document.getElementById('submit-payment-btn');
-                toggleButtonLoading(submitBtn, true, 'در حال ثبت');
+                toggleButtonLoading(submitBtn, true, 'در حال آپلود');
+                document.getElementById('payment-submit-error').textContent = '';
                 
                 const item = itemType === 'quiz' ? allQuizzes[itemId] : allPackages[itemId];
                 
                 try {
+                    // --- NEW: Upload file to Storage ---
+                    const uploadResponse = await storage.createFile(
+                        SCREENSHOT_BUCKET_ID,
+                        ID.unique(),
+                        file
+                    );
+                    const screenshotId = uploadResponse.$id;
+                    // --- END NEW ---
+                    
+                    toggleButtonLoading(submitBtn, true, 'در حال ثبت');
+
                     // Add document to Appwrite Payments collection
                     await db.createDocument(
                         DATABASE_ID,
@@ -1448,11 +1660,13 @@
                         { 
                             userId: currentUser.$id, 
                             userName: userProfile.name, 
-                            // FIX: Re-added itemId since user will create the attribute in Appwrite
+                            userEmail: userProfile.email,
                             itemId, 
                             itemType, 
                             itemTitle: item.title, 
-                            lastFourDigits: lastFourDigits, 
+                            // --- MODIFICATION: Save screenshotId instead of lastFourDigits ---
+                            screenshotId: screenshotId,
+                            // --- END MODIFICATION ---
                             finalPrice: finalPrice, 
                             status: 'pending', 
                             timestamp: new Date().toISOString() // Appwrite Datetime format
@@ -1471,9 +1685,12 @@
 
                 } catch (error) {
                     console.error("Error submitting payment:", error);
-                    // FIX: Add more specific error handling for permissions
-                    if (error.code === 401 || (error.message && error.message.toLowerCase().includes('permission'))) {
-                        document.getElementById('payment-submit-error').textContent = 'خطای دسترسی. (Permissions کالکشن payments را در Appwrite چک کنید)';
+                    // --- NEW: Check for storage errors ---
+                    if (error.message && error.message.toLowerCase().includes('bucket_not_found')) {
+                        document.getElementById('payment-submit-error').textContent = 'خطای سرور: باکت (Bucket) یافت نشد.';
+                        showToast('خطای سرور (Bucket). لطفاً با استاد تماس بگیرید.', 'error');
+                    } else if (error.code === 401 || (error.message && error.message.toLowerCase().includes('permission'))) {
+                        document.getElementById('payment-submit-error').textContent = 'خطای دسترسی. (Permissions کالکشن/باکت را در Appwrite چک کنید)';
                         showToast('خطای دسترسی سرور. لطفاً با استاد تماس بگیرید.', 'error');
                     } else {
                         document.getElementById('payment-submit-error').textContent = 'خطا در ثبت اطلاعات.';
@@ -1524,7 +1741,13 @@
                     allPackages = {};
                     docs.forEach(doc => allPackages[doc.id] = doc);
                     const isStudentView = mainContainer.querySelector('#available-quizzes-container');
+                    // --- MODIFICATION: Add check for admin view ---
+                    const isAdminView = mainContainer.querySelector('#admin-packages-container');
+                    // --- END MODIFICATION ---
                     if (isStudentView) loadStudentQuizzes();
+                    // --- MODIFICATION: Add render call for admin view ---
+                    if (isAdminView) renderAdminPackageManagement();
+                    // --- END MODIFICATION ---
                  });
             }
 
@@ -1729,9 +1952,61 @@
             
             // Helper functions (unchanged)
             function attachItemListeners() {
-                document.querySelectorAll('.start-quiz-btn').forEach(btn => btn.addEventListener('click', (e) => startQuiz(e.currentTarget.dataset.quizId)));
+                // --- MODIFICATION: Changed to call confirmation modal first ---
+                document.querySelectorAll('.start-quiz-btn').forEach(btn => btn.addEventListener('click', (e) => showQuizConfirmation(e.currentTarget.dataset.quizId)));
+                // --- END MODIFICATION ---
                 document.querySelectorAll('.pay-item-btn').forEach(btn => btn.addEventListener('click', (e) => handlePayment(e.currentTarget.dataset.itemId, e.currentTarget.dataset.itemType)));
             }
+
+            // --- NEW FUNCTION to show quiz rules before start ---
+            function showQuizConfirmation(quizId) {
+                const quizData = allQuizzes[quizId];
+                if (!quizData) {
+                    console.error("Quiz data not found for ID:", quizId);
+                    showToast("خطا: اطلاعات آزمون یافت نشد.", "error");
+                    return;
+                }
+
+                const topicsHtml = quizData.topics && quizData.topics.length > 0 ? 
+                    // --- MODIFICATION: Reduced margin-bottom ---
+                    `<li class="mb-1"><strong>مباحث:</strong> ${quizData.topics.join('، ')}</li>` : 
+                    '';
+                
+                // Assuming negative score is 1/3 of positive score (3 points for correct, -1 for incorrect)
+                const negativeScoreRule = "این آزمون دارای نمره منفی است (هر ۳ پاسخ غلط، یک پاسخ صحیح را حذف می‌کند).";
+                const dynamicRankRule = "رتبه شما بر اساس عملکردتان نسبت به سایر شرکت‌کنندگان محاسبه می‌شود و با شرکت افراد جدید، ممکن است تغییر کند.";
+                const durationRule = `مدت زمان آزمون <strong>${quizData.duration} دقیقه</strong> می‌باشد.`;
+                const noPauseRule = "پس از شروع آزمون، امکان توقف زمان یا خروج و بازگشت مجدد وجود ندارد.";
+
+                const message = `
+                    <!-- --- MODIFICATION: Reduced vertical spacing --- -->
+                    <div class="space-y-3 text-right leading-relaxed">
+                        <p>شما در حال شروع آزمون زیر هستید:</p>
+                        <!-- --- MODIFICATION: Reduced vertical margin --- -->
+                        <p class="text-xl font-bold text-purple-700 text-center my-2">${quizData.title}</p>
+                        <!-- --- MODIFICATION: Reduced padding and item margin --- -->
+                        <ul class="list-disc list-outside pr-5 bg-gray-50 p-3 rounded-lg">
+                            ${topicsHtml}
+                            <li class="mb-1">${durationRule}</li>
+                            <li class="mb-1">${negativeScoreRule}</li>
+                            <li class="mb-1">${dynamicRankRule}</li>
+                            <li class="mb-1">${noPauseRule}</li>
+                        </ul>
+                        <p class="font-semibold text-center">آیا برای شروع آماده‌اید؟</p>
+                    </div>
+                `;
+
+                showModal(
+                    'پیش از شروع آزمون',
+                    message,
+                    'بله، شروع کن',
+                    'انصراف',
+                    () => {
+                        startQuiz(quizId); // Call the original function on confirm
+                    }
+                );
+            }
+            // --- END NEW FUNCTION ---
             
             // REMOVED getPaymentStatusButton
 
@@ -1783,12 +2058,15 @@
                 
                 const quizzesInPkgHtml = pkgData.quizIds.map(quizId => {
                     const quiz = allQuizzes[quizId];
-                    return quiz ? `<span class="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded-full">${quiz.title}</span>` : '';
+                    // --- MODIFICATION: Changed purple to blue ---
+                    return quiz ? `<span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">${quiz.title}</span>` : '';
+                    // --- END MODIFICATION ---
                 }).join('');
 
-                return `<div class="flex flex-col sm:flex-row justify-between items-center text-center sm:text-right p-4 border-2 border-purple-400 rounded-lg gap-3 transition-all bg-purple-50 animate-stagger-item" style="animation-delay: ${index * 50}ms">
+                // --- MODIFICATION: Changed purple to blue ---
+                return `<div class="flex flex-col sm:flex-row justify-between items-center text-center sm:text-right p-4 border-2 border-blue-400 rounded-lg gap-3 transition-all bg-blue-50 animate-stagger-item" style="animation-delay: ${index * 50}ms">
                             <div class="flex-grow">
-                                <p class="font-bold text-lg text-purple-800">${pkgData.title}</p>
+                                <p class="font-bold text-lg text-blue-800">${pkgData.title}</p>
                                 <p class="text-sm text-gray-600 my-2">شامل آزمون‌های:</p>
                                 <div class="flex flex-wrap justify-center sm:justify-start gap-1 mt-2">
                                     ${quizzesInPkgHtml}
@@ -1798,6 +2076,7 @@
                                 ${buttonHtml}
                             </div>
                         </div>`;
+                // --- END MODIFICATION ---
             }
             
             // --- CHARTING FUNCTIONS (unchanged) ---
@@ -1836,6 +2115,11 @@
                 const ctx = document.getElementById('result-pie-chart')?.getContext('2d');
                 if (!ctx) return;
                 if (resultPieChartInstance) resultPieChartInstance.destroy();
+                
+                // Add delay to animation
+                const totalDuration = 1000;
+                const delayBetweenElements = totalDuration / (resultData.correct + resultData.incorrect + resultData.unanswered);
+
                 resultPieChartInstance = new Chart(ctx, {
                     type: 'doughnut',
                     data: {
@@ -1843,16 +2127,38 @@
                         datasets: [{
                             data: [resultData.correct, resultData.incorrect, resultData.unanswered],
                             backgroundColor: ['#10b981', '#ef4444', '#6b7280'],
-                            hoverOffset: 4
+                            hoverOffset: 12, 
+                            borderColor: '#ffffff', 
+                            borderWidth: 3, 
+                            hoverBorderColor: '#f3f4f6', // Added hover border
                         }]
                     },
                     options: {
                         responsive: true,
+                        cutout: '65%', 
+                        animation: { 
+                            // MODIFIED: Added delay
+                            delay: 250, // Delay the start of the animation
+                            animateScale: true,
+                            animateRotate: true,
+                            duration: 1000,
+                            easing: 'easeOutCubic'
+                        },
                         plugins: {
                             legend: {
                                 position: 'bottom',
-                                labels: { font: { family: 'Vazirmatn' } }
+                                labels: { 
+                                    font: { family: 'Vazirmatn', size: 14 }, // Increased font size
+                                    padding: 25, 
+                                    boxWidth: 15,
+                                    usePointStyle: true, // Use circles
+                                    pointStyle: 'circle'
+                                }
                             }
+                        },
+                        // Added hover options
+                        onHover: (event, chartElement) => {
+                             event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
                         }
                     }
                 });
@@ -1871,11 +2177,21 @@
                 const activeBtn = document.querySelector(`.admin-tab-btn[data-tab="${tabName}"]`);
                 if (activeBtn) activeBtn.classList.add('active');
                 const contentEl = document.getElementById('admin-content');
+
+                // --- FIX: Add guard clause to prevent race condition error ---
+                if (!contentEl) {
+                    console.warn("handleAdminTabChange: 'admin-content' not found. View was likely changed. Aborting tab render.");
+                    return; // Exit the function if the content area doesn't exist
+                }
+                // --- END FIX ---
+                
                 contentEl.innerHTML = `<div class="flex justify-center items-center h-full"><div class="loading-dots"><span></span><span></span><span></span></div></div>`;
                 
                 const tabRenderMap = {
                     results: { html: `<div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6"><h1 class="text-2xl font-bold text-gray-800">تحلیل نتایج</h1><div class="flex gap-2 w-full md:w-auto"><select id="quiz-filter" class="input-field w-full"></select><div class="relative w-full"><input type="text" id="admin-result-search" class="input-field !pl-10" placeholder="جستجوی دانشجو..."><span class="absolute inset-y-0 left-0 flex items-center pl-3"><svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg></span></div></div></div><div id="admin-stats-cards" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6"></div><div class="bg-white rounded-xl shadow-md overflow-hidden md:bg-transparent md:rounded-none md:shadow-none"><div class="overflow-x-auto"><table class="w-full text-sm text-right text-gray-600 responsive-table"><thead class="text-xs text-gray-700 uppercase bg-gray-100 hidden md:table-header-group"><tr><th class="px-6 py-4">رتبه</th><th class="px-6 py-4">نام</th><th class="px-6 py-4">درصد</th><th class="px-6 py-4">کلیک</th><th class="px-6 py-4">کارنامه</th></tr></thead><tbody id="results-table-body" class="divide-y divide-gray-200 block md:table-row-group"></tbody></table></div><div id="results-pagination-container" class="flex justify-center items-center p-4 space-x-2 rtl:space-x-reverse"></div></div><div class="mt-8"><h2 class="text-2xl font-bold text-gray-800 mb-4">تحلیل سوالات</h2><div id="question-analysis-container" class="space-y-6 bg-white rounded-xl shadow-md p-6"></div></div>`, listener: listenForAdminResults },
-                    payments: { html: `<div class="flex justify-between items-center mb-4"><h1 class="text-2xl font-bold text-gray-800">مدیریت پرداخت‌ها</h1></div><div class="border-b border-gray-200 mb-6"><nav class="-mb-px flex space-x-4 rtl:space-x-reverse" aria-label="Tabs"><button data-subtab="pending" class="payment-subtab-btn whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm">در انتظار تایید</button><button data-subtab="approved" class="payment-subtab-btn whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm">تایید شده ها</button></nav></div><div id="pending-payments-container" class="space-y-3"></div><div id="approved-payments-section" class="hidden"><div class="relative mb-4"><input type="text" id="approved-payment-search" class="input-field !pl-10" placeholder="جستجوی دانشجو بر اساس نام یا ایمیل..."><span class="absolute inset-y-0 left-0 flex items-center pl-3"><svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg></span></div><div class="bg-white rounded-xl shadow-md overflow-hidden md:bg-transparent md:rounded-none md:shadow-none"><div class="overflow-x-auto"><table class="w-full text-sm text-right text-gray-600 responsive-table"><thead class="text-xs text-gray-700 uppercase bg-gray-100 hidden md:table-header-group"><tr><th class="px-6 py-4">نام</th><th class="px-6 py-4">مورد</th><th class="px-6 py-4">مبلغ</th><th class="px-6 py-4">۴ رقم آخر</th><th class="px-6 py-4">تاریخ</th></tr></thead><tbody id="approved-payments-container" class="divide-y divide-gray-200 block md:table-row-group"></tbody></table></div></div><div id="pagination-container" class="flex justify-center items-center mt-6 space-x-2 rtl:space-x-reverse"></div></div>`, listener: listenForAdminPayments },
+                    // --- MODIFICATION: Changed table header for screenshot ---
+                    payments: { html: `<div class="flex justify-between items-center mb-4"><h1 class="text-2xl font-bold text-gray-800">مدیریت پرداخت‌ها</h1></div><div class="border-b border-gray-200 mb-6"><nav class="-mb-px flex space-x-4 rtl:space-x-reverse" aria-label="Tabs"><button data-subtab="pending" class="payment-subtab-btn whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm">در انتظار تایید</button><button data-subtab="approved" class="payment-subtab-btn whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm">تایید شده ها</button></nav></div><div id="pending-payments-container" class="space-y-3"></div><div id="approved-payments-section" class="hidden"><div class="relative mb-4"><input type="text" id="approved-payment-search" class="input-field !pl-10" placeholder="جستجوی دانشجو بر اساس نام یا ایمیل..."><span class="absolute inset-y-0 left-0 flex items-center pl-3"><svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg></span></div><div class="bg-white rounded-xl shadow-md overflow-hidden md:bg-transparent md:rounded-none md:shadow-none"><div class="overflow-x-auto"><table class="w-full text-sm text-right text-gray-600 responsive-table"><thead class="text-xs text-gray-700 uppercase bg-gray-100 hidden md:table-header-group"><tr><th class="px-6 py-4">نام</th><th class="px-6 py-4">مورد</th><th class="px-6 py-4">مبلغ</th><th class="px-6 py-4">اسکرین‌شات</th><th class="px-6 py-4">تاریخ</th></tr></thead><tbody id="approved-payments-container" class="divide-y divide-gray-200 block md:table-row-group"></tbody></table></div></div><div id="pagination-container" class="flex justify-center items-center mt-6 space-x-2 rtl:space-x-reverse"></div></div>`, listener: listenForAdminPayments },
+                    // --- END MODIFICATION ---
                     quiz_management: { html: `<div class="flex justify-between items-center mb-6"><h1 class="text-2xl font-bold text-gray-800">فعال/غیرفعال کردن آزمون‌ها</h1></div><div id="quiz-management-container" class="space-y-3"></div>`, renderer: renderAdminQuizManagement },
                     package_management: { html: `<div class="flex justify-between items-center mb-6"><h1 class="text-2xl font-bold text-gray-800">مدیریت پکیج‌ها</h1></div><div id="admin-packages-container"></div>`, renderer: renderAdminPackageManagement },
                     discounts: { html: `<div class="flex justify-between items-center mb-6"><h1 class="text-2xl font-bold text-gray-800">مدیریت کدهای تخفیف</h1></div><div id="admin-discounts-container"></div>`, renderer: renderAdminDiscounts },
@@ -1897,20 +2213,50 @@
                 document.querySelectorAll('.quiz-status-toggle').forEach(toggle => toggle.addEventListener('change', handleQuizStatusChange));
             }
             
+            // --- FIX: UPDATED FUNCTION ---
             async function handleQuizStatusChange(e) {
                 const quizId = e.target.dataset.quizId, newStatus = e.target.checked;
                 const label = e.target.closest('.flex.items-center').querySelector('.status-label');
                 if (label) { label.textContent = newStatus ? 'فعال' : 'غیرفعال'; label.classList.toggle('text-green-600', newStatus); label.classList.toggle('text-red-600', !newStatus); }
+                
                 try { 
+                    // First, try to update the document
                     await db.updateDocument(DATABASE_ID, SETTINGS_COLLECTION_ID, quizId, { isActive: newStatus }); 
+                    showToast('وضعیت آزمون به‌روزرسانی شد.', 'success'); // Add success feedback
                 } 
                 catch (error) { 
-                    console.error("Error updating quiz status:", error); 
-                    showToast('خطا در به‌روزرسانی وضعیت آزمون.', 'error'); 
-                    e.target.checked = !newStatus; 
-                    if (label) { label.textContent = !newStatus ? 'فعال' : 'غیرفعال'; label.classList.toggle('text-green-600', !newStatus); label.classList.toggle('text-red-600', newStatus); } 
+                    if (error.code === 404) { // 404 = Document not found
+                        // Document doesn't exist, let's create it
+                        try {
+                            // *** FIX: Added quizId to the creation payload to satisfy "Required" constraint ***
+                            // *** FIX: Corrected the entire broken block ***
+                            await db.createDocument(
+                                DATABASE_ID, 
+                                SETTINGS_COLLECTION_ID, // <-- FIX: Was using wrong collection
+                                quizId, // <-- FIX: Use Quiz ID as Document ID
+                                { isActive: newStatus, quizId: quizId }, // <-- FIX: Send correct data
+                                // Permissions: Any user (student) can read, any *logged-in* user (admin) can write
+                                [Permission.read(Role.any()), Permission.write(Role.users())]
+                            ); // <-- FIX: Closed the function call
+                            showToast('تنظیمات آزمون ایجاد و ذخیره شد.', 'success');
+                        } catch (createError) {
+                            console.error("Error CREATING quiz settings:", createError);
+                            showToast('خطا در ایجاد تنظیمات. (دسترسی کالکشن را چک کنید)', 'error');
+                            // Revert UI
+                            e.target.checked = !newStatus; 
+                            if (label) { label.textContent = !newStatus ? 'فعال' : 'غیرفعال'; label.classList.toggle('text-green-600', !newStatus); label.classList.toggle('text-red-600', newStatus); } 
+                        }
+                    } else {
+                        // It was a different error (like 401 - Permissions)
+                        console.error("Error UPDATING quiz status:", error); 
+                        showToast('خطا در به‌روزرسانی. (دسترسی کالکشن را چک کنید)', 'error'); 
+                        // Revert UI
+                        e.target.checked = !newStatus; 
+                        if (label) { label.textContent = !newStatus ? 'فعال' : 'غیرفعال'; label.classList.toggle('text-green-600', !newStatus); label.classList.toggle('text-red-600', newStatus); } 
+                    }
                 }
             }
+            // --- END FIX ---
 
             function renderAdminPriceManagement() {
                 const container = document.getElementById('admin-prices-container');
@@ -1919,18 +2265,47 @@
                 document.querySelectorAll('.save-price-btn').forEach(btn => btn.addEventListener('click', handlePriceUpdate));
             }
 
+            // --- FIX: UPDATED FUNCTION ---
             async function handlePriceUpdate(e) {
                 const quizId = e.target.dataset.quizId;
                 const newPrice = parseInt(document.querySelector(`.price-input[data-quiz-id="${quizId}"]`).value);
                 if (isNaN(newPrice) || newPrice < 0) { showToast('لطفا یک قیمت معتبر وارد کنید.', 'error'); return; }
                 toggleButtonLoading(e.target, true, 'ذخیره');
+                
                 try { 
+                    // First, try to update
                     await db.updateDocument(DATABASE_ID, SETTINGS_COLLECTION_ID, quizId, { price: newPrice }); 
                     showToast('قیمت با موفقیت به‌روزرسانی شد.', 'success');
                 } 
-                catch (error) { console.error("Error updating price:", error); showToast('خطا در به‌روزرسانی قیمت.', 'error'); } 
-                finally { toggleButtonLoading(e.target, false, 'ذخیره'); }
+                catch (error) { 
+                    if (error.code === 404) { // 404 = Document not found
+                        // Document doesn't exist, create it
+                        try {
+                            // *** FIX: Added quizId to the creation payload to satisfy "Required" constraint ***
+                            await db.createDocument(
+                                DATABASE_ID, 
+                                SETTINGS_COLLECTION_ID, 
+                                quizId, // Use the Quiz ID as the Document ID
+                                { price: newPrice, quizId: quizId }, // <-- FIX: ADDED quizId
+                                // Permissions: Any user (student) can read, any *logged-in* user (admin) can write
+                                [Permission.read(Role.any()), Permission.write(Role.users())]
+                            );
+                            showToast('تنظیمات قیمت ایجاد و ذخیره شد.', 'success');
+                        } catch (createError) {
+                            console.error("Error CREATING price settings:", createError);
+                            showToast('خطا در ایجاد تنظیمات قیمت. (دسترسی کالکشن را چک کنید)', 'error');
+                        }
+                    } else {
+                        // Other error, probably permissions
+                        console.error("Error UPDATING price:", error); 
+                        showToast('خطا در به‌روزرسانی قیمت. (دسترسی کالکشن را چک کنید)', 'error'); 
+                    }
+                } 
+                finally { 
+                    toggleButtonLoading(e.target, false, 'ذخیره'); 
+                }
             }
+            // --- END FIX ---
 
             function renderAdminDiscounts() {
                 const container = document.getElementById('admin-discounts-container');
@@ -1968,6 +2343,9 @@
                     await db.createDocument(DATABASE_ID, DISCOUNTS_COLLECTION_ID, ID.unique(), { code, percentage, applicableQuizzes, applicablePackages });
                     e.target.reset(); 
                     showToast('کد تخفیف با موفقیت ایجاد شد.', 'success'); 
+                    // --- MODIFICATION: Refresh the list ---
+                    listenForDiscounts();
+                    // --- END MODIFICATION ---
                 } 
                 catch (error) { console.error("Error creating discount:", error); showToast('خطا در ایجاد کد تخفیف.', 'error'); }
             }
@@ -1978,6 +2356,9 @@
                     try { 
                         await db.deleteDocument(DATABASE_ID, DISCOUNTS_COLLECTION_ID, discountId);
                         showToast('کد تخفیف حذف شد.', 'success');
+                        // --- MODIFICATION: Refresh the list ---
+                        listenForDiscounts();
+                        // --- END MODIFICATION ---
                     } 
                     catch (error) { console.error("Error deleting discount:", error); showToast('خطا در حذف کد.', 'error'); }
                 });
@@ -2026,6 +2407,9 @@
                     await db.createDocument(DATABASE_ID, PACKAGES_COLLECTION_ID, ID.unique(), { title, price, quizIds });
                     e.target.reset();
                     showToast('پکیج با موفقیت ایجاد شد.', 'success');
+                    // --- MODIFICATION: Refresh the list ---
+                    listenForPackages();
+                    // --- END MODIFICATION ---
                 } catch (error) {
                     console.error("Error creating package:", error);
                     showToast('خطا در ایجاد پکیج.', 'error');
@@ -2040,6 +2424,9 @@
                     try {
                         await db.deleteDocument(DATABASE_ID, PACKAGES_COLLECTION_ID, packageId);
                         showToast('پکیج با موفقیت حذف شد.', 'success');
+                        // --- MODIFICATION: Refresh the list ---
+                        listenForPackages();
+                        // --- END MODIFICATION ---
                     } catch (error) {
                         console.error("Error deleting package:", error);
                         showToast('خطا در حذف پکیج.', 'error');
@@ -2062,9 +2449,15 @@
                         [Query.equal("code", code)]
                     );
 
-                    if (discountDocs.length === 0) { throw new Error('نامعتبر'); }
+                    if (discountDocs.documents.length === 0) { throw new Error('نامعتبر'); } // FIX: Use .documents
                     
-                    const discountDoc = discountDocs[0];
+                    const discountDoc = discountDocs.documents[0]; // FIX: Use .documents
+                    
+                    // --- DEBUGGING LOGS ---
+                    // console.log("[DEBUG] شناسه آیتمی که میخواهید بخرید (itemId):", itemId, `(Type: ${typeof itemId})`);
+                    // console.log("[DEBUG] لیست آزمون‌های مجاز در کد تخفیF (applicableQuizzes):", discountDoc.applicableQuizzes, `(Type: ${typeof discountDoc.applicableQuizzes})`);
+                    // console.log("[DEBUG] آیا آیتم در لیست مجاز است؟:", discountDoc.applicableQuizzes?.includes(itemId));
+                    // --- END DEBUGGING LOGS ---
                     
                     let isValid = false;
                     if (itemType === 'quiz' && discountDoc.applicableQuizzes?.includes(itemId)) {
@@ -2108,16 +2501,33 @@
                         pendingContainer.innerHTML = '<p class="text-gray-500">هیچ پرداخت در انتظار تاییدی وجود ندارد.</p>';
                     } else {
                         pendingContainer.innerHTML = pendingPayments.map((payment, index) => {
-                            // FIX: Added null/undefined check for payment.userEmail, since we removed it from client submission
-                            // Also, userEmail might exist if registered user has it, or if it was added on server/console side.
                             const userEmailDisplay = payment.userEmail || (payment.userId ? `ID: ${payment.userId.substring(0, 8)}...` : 'Unknown User');
+                            
+                            // --- NEW: Get screenshot URL ---
+                            let screenshotHtml = '';
+                            if (payment.screenshotId) {
+                                try {
+                                    const screenshotUrl = storage.getFilePreview(SCREENSHOT_BUCKET_ID, payment.screenshotId);
+                                    screenshotHtml = `<a href="${screenshotUrl}" target="_blank" class="btn !bg-blue-500 hover:!bg-blue-600 text-sm !py-1 !px-3">مشاهده اسکرین‌شات</a>`;
+                                } catch (e) {
+                                    console.error("Error getting file preview:", e);
+                                    screenshotHtml = `<span class="text-xs text-red-500">خطا در بارگذاری</span>`;
+                                }
+                            } else {
+                                screenshotHtml = `<span class="text-xs text-gray-400">بدون اسکرین‌شات</span>`;
+                            }
+                            // --- END NEW ---
                             
                             return `
                             <div id="payment-${payment.id}" class="p-4 bg-white border rounded-lg space-y-2 sm:grid sm:grid-cols-5 sm:gap-4 sm:items-center sm:space-y-0 animate-stagger-item" style="animation-delay: ${index * 50}ms">
                                 <div><p class="font-bold">${payment.userName}</p><p class="text-xs text-gray-500">${userEmailDisplay}</p></div>
                                 <div><p class="font-semibold ${payment.itemType === 'package' ? 'text-purple-600' : ''}">${payment.itemTitle}</p></div>
                                 <div><p class="font-semibold text-green-700">${(payment.finalPrice ?? 0).toLocaleString('fa-IR')} تومان</p></div>
-                                <div><p class="text-sm font-mono" title="چهار رقم آخر کارت">${payment.lastFourDigits || 'N/A'}</p></div>
+                                <!-- --- MODIFICATION: Replaced digits with screenshot button --- -->
+                                <div>
+                                    ${screenshotHtml}
+                                </div>
+                                <!-- --- END MODIFICATION --- -->
                                 <div class="pt-2 sm:pt-0 sm:text-left"><button data-payment-id="${payment.id}" class="btn bg-green-500 hover:bg-green-600 approve-payment-btn text-sm py-1 px-3 w-full sm:w-auto">تایید</button></div>
                             </div>`
                         }).join('');
@@ -2162,13 +2572,19 @@
             async function handleApprovePayment(e) {
                 const btn = e.target;
                 const paymentId = btn.dataset.paymentId;
-                const paymentCard = document.getElementById(`payment-${paymentId}`);
+                // const paymentCard = document.getElementById(`payment-${paymentId}`); // <-- REMOVED
 
                 toggleButtonLoading(btn, true, 'تایید');
                 try {
                     // Update document in Appwrite
                     await db.updateDocument(DATABASE_ID, PAYMENTS_COLLECTION_ID, paymentId, { status: 'approved' });
                     showToast('پرداخت با موفقیت تایید شد.', 'success');
+                    
+                    // --- MODIFICATION: Refresh the lists instead of manually removing the item ---
+                    listenForAdminPayments(); 
+                    // --- END MODIFICATION ---
+
+                    /* --- REMOVED MANUAL DOM MANIPULATION ---
                     if (paymentCard) {
                         paymentCard.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
                         paymentCard.style.opacity = '0';
@@ -2181,6 +2597,7 @@
                             }
                         }, 500);
                     }
+                    */
                 }
                 catch (error) { 
                     console.error("Error approving payment:", error); 
@@ -2225,12 +2642,36 @@
                 } else {
                      approvedContainer.innerHTML = paginatedPayments.map((payment, index) => {
                         const paymentDate = new Date(payment.timestamp).toLocaleDateString('fa-IR');
+                        
+                        // --- NEW: Get screenshot URL ---
+                        let screenshotHtml = '';
+                        if (payment.screenshotId) {
+                            try {
+                                const screenshotUrl = storage.getFilePreview(SCREENSHOT_BUCKET_ID, payment.screenshotId);
+                                screenshotHtml = `<a href="${screenshotUrl}" target="_blank" class="btn !bg-blue-500 hover:!bg-blue-600 text-xs !py-1 !px-3">مشاهده</a>`;
+                            } catch (e) {
+                                screenshotHtml = `<span class="text-xs text-red-500">خطا</span>`;
+                            }
+                        } else {
+                            screenshotHtml = `<span class="text-xs text-gray-400">N/A</span>`;
+                        }
+                        // --- END NEW ---
+
                         return `
                         <tr class="hover:bg-gray-50 transition-colors animate-stagger-item block md:table-row mb-4 md:mb-0 border md:border-none rounded-lg md:rounded-none shadow md:shadow-none p-4 md:p-0" style="animation-delay: ${index * 50}ms">
-                            <td class="md:px-6 md:py-4 block md:table-cell" data-label="نام"><span>${payment.userName}</span></td>
+                            <td class="md:px-6 md:py-4 block md:table-cell" data-label="نام">
+                                <div>
+                                    <p class="font-bold">${payment.userName}</p>
+                                    <p class="text-xs text-gray-500">${payment.userEmail || (payment.userId ? `ID: ${payment.userId.substring(0, 8)}...` : 'ایمیل نامشخص')}</p>
+                                </div>
+                            </td>
                             <td class="md:px-6 md:py-4 block md:table-cell ${payment.itemType === 'package' ? 'text-purple-600 font-semibold' : ''}" data-label="مورد"><span>${payment.itemTitle}</span></td>
                             <td class="md:px-6 md:py-4 text-green-700 font-semibold block md:table-cell" data-label="مبلغ"><span>${(payment.finalPrice ?? 0).toLocaleString('fa-IR')} ت</span></td>
-                            <td class="md:px-6 md:py-4 font-mono block md:table-cell" data-label="۴ رقم آخر"><span>${payment.lastFourDigits || 'N/A'}</span></td>
+                            <!-- --- MODIFICATION: Replaced digits with screenshot button --- -->
+                            <td class="md:px-6 md:py-4 block md:table-cell" data-label="اسکرین‌شات">
+                                ${screenshotHtml}
+                            </td>
+                            <!-- --- END MODIFICATION --- -->
                             <td class="md:px-6 md:py-4 text-gray-500 block md:table-cell" data-label="تاریخ"><span>${paymentDate}</span></td>
                         </tr>
                         `;
@@ -2450,7 +2891,7 @@
 
             async function finishQuiz() {
                 if (quizState.isSubmitting) {
-                    console.log("Quiz submission already in progress. Ignoring duplicate request.");
+                    // console.log("Quiz submission already in progress. Ignoring duplicate request.");
                     return;
                 }
                 quizState.isSubmitting = true; 
@@ -2482,15 +2923,17 @@
                 const resultData = { 
                     quizId: quizState.quizId, 
                     userId: currentUser.$id, // Appwrite User ID
-                    userEmail: currentUser.email, 
                     name: userProfile.name, 
                     answers: userAnswersStrings, // Save as String Array
                     correct, incorrect, unanswered, score, 
-                    percentage: Math.max(0, percentage), 
-                    potentialPercentage: Math.max(0, (correct * 3 / (quizData.questions.length * 3)) * 100), 
+                    // --- MODIFICATION: Removed Math.max(0, ...) ---
+                    percentage: percentage, 
+                    potentialPercentage: (correct * 3 / (quizData.questions.length * 3)) * 100, 
+                    // --- END MODIFICATION ---
                     totalQuestions: quizData.questions.length, 
                     adClicked: false, 
-                    timestamp: new Date().toISOString() // Appwrite Datetime format
+                    timestamp: new Date().toISOString(), // Appwrite Datetime format
+                    aiAnalysis: null
                 };
                 
                 try {
@@ -2557,4 +3000,3 @@
     </script>
 </body>
 </html>
-
