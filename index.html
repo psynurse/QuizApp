@@ -548,6 +548,7 @@
             const mainContainer = document.getElementById('main-container');
             let quizState = null; // <--- متغیر آزمون در حال اجرا
             let isHandlingPopState = false; // --- NEW: Flag to prevent history loops
+            let studentDashboardPoller = null; // --- NEW: Interval for auto-refreshing student dashboard
 
             // --- UTILITY & AI FUNCTIONS ---
             
@@ -664,7 +665,8 @@
                     <div id="${modalId}" class="custom-modal-backdrop">
                         <div class="custom-modal-content">
                             <h3 class="text-2xl font-bold text-gray-800 mb-4">${title}</h3>
-                            <div class="text-gray-600 mb-8">${message}</div>
+                            <!-- MODIFICATION: Reduced margin-bottom from mb-8 to mb-6 -->
+                            <div class="text-gray-600 mb-6">${message}</div>
                             <div class="flex justify-end gap-3">
                                 ${cancelText ? `<button class="btn bg-gray-500 hover:bg-gray-600 modal-cancel-btn">${cancelText}</button>` : ''}
                                 <button class="btn btn-primary modal-confirm-btn">${confirmText}</button>
@@ -1017,9 +1019,11 @@
                                 <!-- Completed quizzes will be loaded here -->
                                 <div class="flex justify-center items-center h-24"><div class="loading-dots"><span></span><span></span><span></span></div></div>
                             </div>
-                            <div id="progress-chart-container" class="mt-6 hidden">
+                            <!-- --- MODIFICATION: Added fixed height style --- -->
+                            <div id="progress-chart-container" class="mt-6 hidden" style="height: 300px;">
                                 <canvas id="progress-chart"></canvas>
                             </div>
+                            <!-- --- END MODIFICATION --- -->
                         </div>
                     </div>`,
                 adminDashboard: (props) => `
@@ -1114,20 +1118,32 @@
                             </button>
                         </div>
 
-                        <!-- Stats Grid (Modified: Only Rank and Percentage) -->
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="card !p-4 text-center animate-fade-in-up"><p class="text-sm font-semibold text-gray-500">رتبه شما</p><p class="text-3xl font-bold text-purple-600 mt-1">${props.rank}</p></div>
-                            <!-- --- MODIFICATION: Use dynamic color class --- -->
-                            <div class="card !p-4 text-center animate-fade-in-up" style="animation-delay: 100ms;"><p class="text-sm font-semibold text-gray-500">درصد</p><p class="text-3xl font-bold ${percentageColorClass} mt-1">${percentage.toFixed(2)}%</p></div>
-                            <!-- --- END MODIFICATION --- -->
-                        </div>
+                        <!-- --- MODIFICATION: Removed the separate stats grid --- -->
 
-                        <!-- Charts (Modified: Added small stats) -->
-                        <div class="card !p-4 sm:!p-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-                            <!-- MODIFIED: Added delay to chart animation -->
-                            <div class="w-full max-w-xs mx-auto animate-fade-in-left" style="animation-delay: 250ms;"><canvas id="result-pie-chart"></canvas></div>
-                            <div class="text-center md:text-right animate-fade-in-right">
-                                <!-- NEW Small Stats -->
+                        <!-- --- MODIFICATION: Integrated Stats and Chart Card --- -->
+                        <div class="card !p-4 sm:!p-8 grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+                            
+                            <!-- Column 1: Rank Stat (Percentage Removed) -->
+                            <div class="space-y-6 animate-fade-in-left">
+                                <div class="text-center">
+                                    <p class="text-sm font-semibold text-gray-500">رتبه شما</p>
+                                    <p class="text-4xl font-bold text-purple-600 mt-1">${props.rank}</p>
+                                </div>
+                                <!-- <hr class="border-gray-200"> -- REMOVED -->
+                                <!-- <div class="text-center"> -- REMOVED
+                                    <p class="text-sm font-semibold text-gray-500">درصد</p>
+                                    <p class="text-4xl font-bold ${percentageColorClass} mt-1">${percentage.toFixed(2)}%</p>
+                                </div> -->
+                            </div>
+
+                            <!-- Column 2: Chart (Center) -->
+                            <div class="w-full max-w-sm mx-auto animate-fade-in-up relative" style="animation-delay: 100ms;">
+                                <canvas id="result-pie-chart"></canvas>
+                            </div>
+
+                            <!-- Column 3: Detailed Stats & Analysis -->
+                            <div class="text-center md:text-right animate-fade-in-right" style="animation-delay: 200ms;">
+                                <!-- Correct/Incorrect/Unanswered stats -->
                                 <div class="flex justify-center md:justify-start gap-6 mb-6">
                                     <div class="text-center">
                                         <p class="text-sm font-semibold text-gray-500">صحیح</p>
@@ -1150,6 +1166,8 @@
                                 <!-- --- END MODIFICATION --- -->
                             </div>
                         </div>
+                        <!-- --- END MODIFICATION: Integrated Stats and Chart Card --- -->
+
 
                         <!-- AI Consultation -->
                         <div class="card !p-4 sm:!p-8 animate-slide-up" style="animation-delay: 200ms;">
@@ -1162,7 +1180,47 @@
                             </div>
                         </div>
                         
+                        <!-- NEW Ad/Link Card (User Provided) -->
+                        ${props.origin === 'student' ? `
+                        <div class="my-8 border-t pt-8 animate-slide-up" style="animation-delay: 300ms;">
+                            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">قدم بعدی برای موفقیت شما</h2>
+                            
+                            <!-- MODIFICATION: Wrapper for horizontal scroll on mobile -->
+                            <!-- On mobile: overflow-x-auto, flex, no-wrap, space-x-6 -->
+                            <!-- On desktop: md:grid, md:grid-cols-3, md:gap-6 -->
+                            <div class="md:grid md:grid-cols-3 md:gap-6 flex overflow-x-auto space-x-6 rtl:space-x-reverse md:space-x-0 pb-4 custom-scrollbar">
+                                
+                                <!-- Card 1: Course -->
+                                <!-- MODIFICATION: Added w-80 (320px) for mobile width, flex-shrink-0, and md:w-auto for desktop grid -->
+                                <div class="p-6 bg-green-50 rounded-2xl text-center flex flex-col items-center shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 w-80 md:w-auto flex-shrink-0">
+                                    <div class="p-3 bg-green-200 rounded-full mb-3"><svg class="w-8 h-8 text-green-700"  fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 14l9-5-9-5-9 5 9 5z" /><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" /></svg></div>
+                                    <h3 class="text-lg font-bold text-green-800">دوره جامع روان پرستاری</h3>
+                                    <p class="text-green-700 text-sm my-2 flex-grow">با شرکت در این دوره، شانس قبولی خود را تضمین کنید.</p>
+                                    <a href="https://psynurse.ir/shop/online-c/P1062-%D8%AF%D9%88%D8%B1%D9%87-%D8%AC%D8%A7%D9%85%D8%B9-%D8%B1%D9%88%D8%A7%D9%86-%D9%BE%D8%B1%D8%B3%D8%AA%D8%A7%D8%B1%DB%8C-%D8%A7%D8%B1%D8%B4%D8%AF-%DB%B1%DB%B0%DB%B0%DB%B5.html" target="_blank" class="ad-link-btn btn bg-green-600 hover:bg-green-700 mt-2 !text-sm !py-2 !px-4">مشاهده دوره</a>
+                                </div>
+                                <!-- Card 2: Consultation -->
+                                <!-- MODIFICATION: Added w-80 (320px) for mobile width, flex-shrink-0, and md:w-auto for desktop grid -->
+                                <div class="p-6 bg-blue-50 rounded-2xl text-center flex flex-col items-center shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 w-80 md:w-auto flex-shrink-0">
+                                    <div class="p-3 bg-blue-200 rounded-full mb-3"><svg class="w-8 h-8 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg></div>
+                                    <h3 class="text-lg font-bold text-blue-800">مشاوره و برنامه‌ریزی</h3>
+                                    <p class="text-blue-700 text-sm my-2 flex-grow">با مشاوره تخصصی خانم کلیج، مسیر خود را برای آزمون ارشد هموار کنید.</p>
+                                    <a href="https://psynurse.ir/blog/%D9%85%D8%B4%D8%A7%D9%88%D8%B1%D9%87-%D9%88-%D8%A8%D8%B1%D9%86%D8%A7%D9%85%D9%87-%D8%B1%DB%8C%D8%B2%DB%8C/P1063-%D9%85%D8%B4%D8%A7%D9%88%D8%B1%D9%87-%D9%88-%D8%A8%D8%B1%D9%86%D8%A7%D9%85%D9%87-%D8%B1%DB%8C%D8%B2%DB%8C-%D8%A7%D8%B1%D8%B4%D8%AF-%D9%BE%D8%B1%D8%B3%D8%AA%D8%A7%D8%B1%DB%8C-%D8%AE%D8%A7%D9%86%D9%85-%D9%81%D8%A7%D8%B7%D9%85%D9%87-%DA%A9%D9%84%DB%8C%D8%AC-%DA%A9%D8%A7%D8%B1%D8%B4%D9%86%D8%A7%D8%B3-%D8%A7%D8%B1%D8%B4%D8%AF-%D8%A7%D8%B2-%D8%AF%D8%A7%D9%86%D8%B4%DA%AF%D8%A7%D9%87-%D8%B9%D9%84%D9%88%D9%85-%D9%BE%D8%B2%D8%B4%DA%A9%DB%8C-%D8%A7%D8%B5%D9%81%D9%87%D8%A7%D9%86.html" target="_blank" class="ad-link-btn btn bg-blue-600 hover:bg-blue-700 mt-2 !text-sm !py-2 !px-4">دریافت مشاوره</a>
+                                </div>
+                                <!-- Card 3: Book -->
+                                <!-- MODIFICATION: Added w-80 (320px) for mobile width, flex-shrink-0, and md:w-auto for desktop grid -->
+                                <div class="p-6 bg-amber-50 rounded-2xl text-center flex flex-col items-center shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 w-80 md:w-auto flex-shrink-0">
+                                    <div class="p-3 bg-amber-200 rounded-full mb-3"><svg class="w-8 h-8 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg></div>
+                                    <h3 class="text-lg font-bold text-amber-800">کتاب تست اوج روان</h3>
+                                    <p class="text-amber-700 text-sm my-2 flex-grow">منبعی کامل و ضروری برای تسلط بر تست‌های روان پرستاری.</p>
+                                    <a href="https://psynurse.ir/shop/%DA%A9%D8%AA%D8%A7%D8%A8%D8%AE%D8%A7%D9%86%D9%87-%D9%BE%D8%B1%D8%B3%D8%AA%D8%A7%D8%B1%DB%8C/P1071-%D8%A7%D9%88%D8%AC-%D8%B1%D9%88%D8%A7%D9%86.html" target="_blank" class="ad-link-btn btn bg-amber-600 hover:bg-amber-700 mt-2 !text-sm !py-2 !px-4">خرید کتاب</a>
+                                </div>
+                            </div>
+                        </div>
+                        ` : ''}
+                        <!-- END Ad/Link Card -->
+                        
                         <!-- Ad/Link Card -->
+                        ${'' /* --- MODIFICATION: This section has been replaced by the banner above ---
                         ${props.origin === 'student' && quizSettings.adLink && quizSettings.adText ? `
                         <div class="card !p-0 overflow-hidden bg-gradient-to-l from-purple-700 to-indigo-800 animate-slide-up" style="animation-delay: 300ms;">
                             <a href="${quizSettings.adLink}" target="_blank" class="ad-link-btn block p-6 text-white text-center hover:bg-black hover:bg-opacity-10 transition-all">
@@ -1170,6 +1228,7 @@
                                 <p class="mt-2 opacity-90">برای اطلاعات بیشتر و ثبت نام کلیک کنید</p>
                             </a>
                         </div>` : ''}
+                        --- END MODIFICATION --- */}
 
                         <!-- Question Review -->
                         <div class="card !p-4 sm:!p-8 animate-slide-up" style="animation-delay: 400ms;">
@@ -1181,19 +1240,19 @@
                     </div>`;
                 },
                 paymentInstructions: (props) => `
-                    <div class="card max-w-2xl mx-auto animate-slide-up">
+                    <div class="card max-w-lg mx-auto animate-slide-up"> <!-- MODIFICATION: max-w-2xl to max-w-lg -->
                         <button id="back-to-dash-btn" class="absolute top-4 left-4 text-gray-400 hover:text-gray-600">
                             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                         </button>
-                        <h1 class="text-2xl font-bold text-gray-800 text-center mb-6">راهنمای پرداخت</h1>
+                        <h1 class="text-xl font-bold text-gray-800 text-center mb-4">راهنمای پرداخت</h1> <!-- MODIFICATION: text-2xl mb-6 to text-xl mb-4 -->
                         
-                        <div class="text-center p-6 bg-purple-50 rounded-xl border border-purple-200">
-                            <p class="text-lg font-medium text-gray-700">مبلغ قابل پرداخت:</p>
-                            <p id="payment-amount" class="text-4xl font-bold text-purple-700 my-3">${props.finalPrice.toLocaleString('fa-IR')} تومان</p>
+                        <div class="text-center p-4 bg-purple-50 rounded-xl border border-purple-200"> <!-- MODIFICATION: p-6 to p-4 -->
+                            <p class="text-base font-medium text-gray-700">مبلغ قابل پرداخت:</p> <!-- MODIFICATION: text-lg to text-base -->
+                            <p id="payment-amount" class="text-3xl font-bold text-purple-700 my-2">${props.finalPrice.toLocaleString('fa-IR')} تومان</p> <!-- MODIFICATION: text-4xl my-3 to text-3xl my-2 -->
                             ${props.originalPrice !== props.finalPrice ? `<p class="text-sm text-gray-500">(مبلغ اصلی: <span class="line-through">${props.originalPrice.toLocaleString('fa-IR')}</span> تومان)</p>` : ''}
                         </div>
 
-                        <div class="mt-6">
+                        <div class="mt-4"> <!-- MODIFICATION: mt-6 to mt-4 -->
                             <label for="discount-code-input" class="block text-sm font-medium text-gray-700">کد تخفیف دارید؟</label>
                             <div class="flex gap-2 mt-1">
                                 <input type="text" id="discount-code-input" class="input-field" placeholder="کد تخفیف را وارد کنید...">
@@ -1202,14 +1261,15 @@
                             <p id="discount-feedback" class="text-sm mt-2 h-5"></p>
                         </div>
 
-                        <hr class="my-8 border-gray-200">
+                        <hr class="my-6 border-gray-200"> <!-- MODIFICATION: my-8 to my-6 -->
 
-                        <div class="space-y-4 text-gray-700 leading-relaxed">
-                            <p class="font-semibold text-lg">مراحل پرداخت:</p>
+                        <div class="space-y-3 text-gray-700 leading-relaxed"> <!-- MODIFICATION: space-y-4 to space-y-3 -->
+                            <p class="font-semibold text-base">مراحل پرداخت:</p> <!-- MODIFICATION: text-lg to text-base -->
                             <p>۱. مبلغ مشخص شده را به شماره کارت زیر واریز نمایید:</p>
                             <div class="p-4 bg-gray-100 rounded-lg flex flex-col sm:flex-row justify-between items-center gap-3">
                                 <div class="text-center sm:text-right">
-                                    <p class="font-mono font-bold text-xl text-gray-800">${PAYMENT_INFO.displayedCardNumber}</p>
+                                    <!-- MODIFICATION: Added tracking-wider for better font display -->
+                                    <p class="font-mono font-bold text-xl text-gray-800 tracking-wider">${PAYMENT_INFO.displayedCardNumber}</p>
                                     <p class="text-sm text-gray-600">${PAYMENT_INFO.accountHolder}</p>
                                 </div>
                                 <button id="copy-card-btn" class="btn bg-gray-600 hover:bg-gray-700 !py-2 !px-4 text-sm">کپی شماره کارت</button>
@@ -1219,7 +1279,7 @@
                             <p>۴. پس از ثبت اطلاعات، دسترسی شما توسط استاد بررسی و تایید خواهد شد.</p>
                         </div>
                         
-                        <button id="proceed-to-submit-btn" class="btn btn-primary w-full mt-8">ثبت اطلاعات واریز</button>
+                        <button id="proceed-to-submit-btn" class="btn btn-primary w-full mt-6">ثبت اطلاعات واریز</button> <!-- MODIFICATION: mt-8 to mt-6 -->
                     </div>`,
                 paymentSubmission: (props) => `
                     <div class="card max-w-lg mx-auto animate-slide-up">
@@ -1248,6 +1308,13 @@
 
             // --- VIEW RENDERING ENGINE (FIXED) ---
             const renderView = (viewName, props = {}) => {
+                // --- NEW: Clear dashboard poller when navigating away ---
+                if (studentDashboardPoller) {
+                    clearInterval(studentDashboardPoller);
+                    studentDashboardPoller = null;
+                }
+                // --- END NEW ---
+
                 const viewTemplate = viewContentMap[viewName];
                 let viewContent;
 
@@ -1292,6 +1359,20 @@
                 // --- END MODIFICATION: History Management Logic ---
 
                 attachEventListeners(viewName, props);
+                
+                // --- NEW: Start poller if on student dashboard ---
+                if (viewName === 'studentDashboard') {
+                    // console.log("Starting dashboard poller...");
+                    studentDashboardPoller = setInterval(() => {
+                        // console.log("Polling for updates...");
+                        // These functions will automatically refresh the view if it's still 'studentDashboard'
+                        listenForQuizzes(); 
+                        listenForPackages();
+                        listenForQuizSettings();
+                        listenForDiscounts();
+                    }, 30000); // Poll every 30 seconds (30,000 ms)
+                }
+                // --- END NEW ---
             };
             
             // --- EVENT LISTENER ATTACHMENT (modified signOut) ---
@@ -1577,8 +1658,15 @@
                     loadUserSession(); // Load dashboard on success
                 } 
                 catch (error) {
-                    errorEl.textContent = 'ایمیل یا رمز عبور اشتباه است.'; // Generic error for security
-                    console.error("Login Error: ", error);
+                    // --- MODIFICATION: Check for network error vs. auth error ---
+                    console.error("Login Error: ", error); // Log the error regardless
+                    if (error.message && error.message.toLowerCase().includes('network request failed')) {
+                        errorEl.textContent = 'خطا در اتصال. دقایقی دیگر وارد شوید.';
+                    } else {
+                        // Default error for 401 (wrong pass) or other issues
+                        errorEl.textContent = 'ایمیل یا رمز عبور اشتباه است.'; 
+                    }
+                    // --- END MODIFICATION ---
                 } finally {
                     toggleButtonLoading(submitBtn, false, 'ورود');
                 }
@@ -1969,7 +2057,7 @@
 
                 const topicsHtml = quizData.topics && quizData.topics.length > 0 ? 
                     // --- MODIFICATION: Reduced margin-bottom ---
-                    `<li class="mb-1"><strong>مباحث:</strong> ${quizData.topics.join('، ')}</li>` : 
+                    `<li class="mb-0"><strong>مباحث:</strong> ${quizData.topics.join('، ')}</li>` : // MOD: mb-0
                     '';
                 
                 // Assuming negative score is 1/3 of positive score (3 points for correct, -1 for incorrect)
@@ -1979,20 +2067,20 @@
                 const noPauseRule = "پس از شروع آزمون، امکان توقف زمان یا خروج و بازگشت مجدد وجود ندارد.";
 
                 const message = `
-                    <!-- --- MODIFICATION: Reduced vertical spacing --- -->
-                    <div class="space-y-3 text-right leading-relaxed">
+                    <!-- --- MODIFICATION: Reduced vertical spacing & font size --- -->
+                    <div class="space-y-2 text-right leading-relaxed text-sm"> <!-- MOD: space-y-2, text-sm -->
                         <p>شما در حال شروع آزمون زیر هستید:</p>
-                        <!-- --- MODIFICATION: Reduced vertical margin --- -->
-                        <p class="text-xl font-bold text-purple-700 text-center my-2">${quizData.title}</p>
+                        <!-- --- MODIFICATION: Reduced vertical margin & font size --- -->
+                        <p class="text-lg font-bold text-purple-700 text-center my-2">${quizData.title}</p> <!-- MOD: text-lg -->
                         <!-- --- MODIFICATION: Reduced padding and item margin --- -->
-                        <ul class="list-disc list-outside pr-5 bg-gray-50 p-3 rounded-lg">
+                        <ul class="list-disc list-outside pr-5 bg-gray-50 p-3 rounded-lg space-y-1.5"> <!-- MOD: space-y-1.5 -->
                             ${topicsHtml}
-                            <li class="mb-1">${durationRule}</li>
-                            <li class="mb-1">${negativeScoreRule}</li>
-                            <li class="mb-1">${dynamicRankRule}</li>
-                            <li class="mb-1">${noPauseRule}</li>
+                            <li class="mb-0">${durationRule}</li> <!-- MOD: mb-0 -->
+                            <li class="mb-0">${negativeScoreRule}</li> <!-- MOD: mb-0 -->
+                            <li class="mb-0">${dynamicRankRule}</li> <!-- MOD: mb-0 -->
+                            <li class="mb-0">${noPauseRule}</li> <!-- MOD: mb-0 -->
                         </ul>
-                        <p class="font-semibold text-center">آیا برای شروع آماده‌اید؟</p>
+                        <p class="font-semibold text-center pt-2">آیا برای شروع آماده‌اید؟</p> <!-- MOD: pt-2 -->
                     </div>
                 `;
 
@@ -2079,11 +2167,18 @@
                 // --- END MODIFICATION ---
             }
             
-            // --- CHARTING FUNCTIONS (unchanged) ---
+            // --- CHARTING FUNCTIONS (MODIFIED) ---
             function renderProgressChart(labels, data) {
                 const ctx = document.getElementById('progress-chart')?.getContext('2d');
                 if (!ctx) return;
                 if (progressChartInstance) progressChartInstance.destroy();
+                
+                // --- NEW: Create Gradient ---
+                const gradient = ctx.createLinearGradient(0, 0, 0, 300); // 300px height
+                gradient.addColorStop(0, 'rgba(139, 92, 246, 0.5)'); // purple-600 with 50% opacity
+                gradient.addColorStop(0.5, 'rgba(139, 92, 246, 0.1)'); // purple-600 with 10% opacity
+                gradient.addColorStop(1, 'rgba(255, 255, 255, 0)'); // Transparent at the bottom
+
                 progressChartInstance = new Chart(ctx, {
                     type: 'line',
                     data: {
@@ -2091,21 +2186,86 @@
                         datasets: [{
                             label: 'درصد آزمون‌ها',
                             data: data,
-                            borderColor: '#8b5cf6',
-                            backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                            borderColor: '#8b5cf6', // purple-600
+                            backgroundColor: gradient, // Use the new gradient
                             fill: true,
-                            tension: 0.3
+                            tension: 0.4, // Slightly more curve
+                            borderWidth: 3, // Thicker line
+                            pointBackgroundColor: '#ffffff', // White points
+                            pointBorderColor: '#8b5cf6', // Purple border
+                            pointBorderWidth: 2,
+                            pointRadius: 5,
+                            pointHoverBackgroundColor: '#8b5cf6', // Purple on hover
+                            pointHoverBorderColor: '#ffffff',
+                            pointHoverRadius: 7,
+                            pointHoverBorderWidth: 2,
                         }]
                     },
                     options: {
                         responsive: true,
-                        plugins: { legend: { display: false } },
+                        maintainAspectRatio: false, // Fill container height
+                        plugins: { 
+                            legend: { display: false },
+                            tooltip: {
+                                enabled: true,
+                                mode: 'index',
+                                intersect: false,
+                                backgroundColor: 'rgba(17, 24, 39, 0.8)', // bg-gray-900/80
+                                titleFont: { family: 'Vazirmatn', weight: 'bold' },
+                                bodyFont: { family: 'Vazirmatn' },
+                                padding: 12,
+                                cornerRadius: 8,
+                                displayColors: false, // Hide the little color box
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.y !== null) {
+                                            label += `${context.parsed.y.toFixed(2)}%`;
+                                        }
+                                        return label;
+                                    },
+                                    title: function(context) {
+                                        return context[0].label;
+                                    }
+                                }
+                            }
+                        },
                         scales: {
                             y: {
-                                beginAtZero: true,
-                                max: 100,
-                                ticks: { callback: value => value + '%' }
+                                // beginAtZero: false, // Allow it to zoom in
+                                // --- NEW: Suggest min/max based on data, but ensure 0 is visible if data is near it ---
+                                min: Math.min(0, Math.floor(Math.min(...data) / 10) * 10 - 10), // Start 10 below min score (rounded to 10), or 0
+                                max: 100, // Max is always 100%
+                                ticks: { 
+                                    callback: value => value + '%',
+                                    font: { family: 'Vazirmatn' },
+                                    color: '#4b5563' // text-gray-600
+                                },
+                                grid: {
+                                    drawBorder: false, // Remove y-axis line
+                                    color: '#e5e7eb' // gray-200
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    font: { family: 'Vazirmatn' },
+                                    color: '#4b5563' // text-gray-600
+                                },
+                                grid: {
+                                    display: false, // Hide vertical grid lines
+                                }
                             }
+                        },
+                        interaction: {
+                            intersect: false,
+                            mode: 'index',
+                        },
+                        animation: {
+                            duration: 1000,
+                            easing: 'easeInOutCubic',
                         }
                     }
                 });
@@ -2116,26 +2276,66 @@
                 if (!ctx) return;
                 if (resultPieChartInstance) resultPieChartInstance.destroy();
                 
-                // Add delay to animation
-                const totalDuration = 1000;
-                const delayBetweenElements = totalDuration / (resultData.correct + resultData.incorrect + resultData.unanswered);
+                // --- NEW: Custom Plugin for Center Text ---
+                const centerTextPlugin = {
+                    id: 'centerText',
+                    afterDraw: (chart) => {
+                        const ctx = chart.ctx;
+                        const { width, height } = chart.chartArea;
+                        
+                        // Check if chart area is valid
+                        if (width <= 0 || height <= 0) return;
+
+                        const centerX = chart.chartArea.left + width / 2;
+                        const centerY = chart.chartArea.top + height / 2;
+                        
+                        // Get percentage from options
+                        const percentage = chart.options.plugins.centerText.percentage;
+                        const percentageColor = chart.options.plugins.centerText.color;
+
+                        ctx.save();
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        
+                        // Percentage Number
+                        ctx.font = `bold 40px Vazirmatn`; // فونت بزرگتر و ضخیم تر
+                        ctx.fillStyle = percentageColor; // استفاده از رنگ داینامیک
+                        ctx.fillText(`${percentage.toFixed(1)}%`, centerX, centerY - 10); // کمی بالاتر
+                        
+                        // "درصد" text
+                        ctx.font = `500 16px Vazirmatn`; // وزن متوسط، کوچکتر
+                        ctx.fillStyle = '#6b7280'; // gray-500
+                        ctx.fillText('درصد', centerX, centerY + 20); // کمی پایین تر
+                        
+                        ctx.restore();
+                    }
+                };
+                // --- END NEW PLUGIN ---
+
+                // --- NEW: Get percentage and its color for the plugin ---
+                const percentage = resultData.percentage;
+                const percentageColorClass = percentage >= 0 ? '#10b981' : '#ef4444'; // Use hex codes for canvas
 
                 resultPieChartInstance = new Chart(ctx, {
                     type: 'doughnut',
+                    // --- NEW: Register Plugin ---
+                    plugins: [centerTextPlugin],
                     data: {
                         labels: ['صحیح', 'غلط', 'نزده'],
                         datasets: [{
                             data: [resultData.correct, resultData.incorrect, resultData.unanswered],
-                            backgroundColor: ['#10b981', '#ef4444', '#6b7280'],
-                            hoverOffset: 12, 
+                            // --- MODIFIED: New Colors ---
+                            backgroundColor: ['#14b8a6', '#f43f5e', '#9ca3af'], // teal-500, rose-500, gray-400
+                            hoverOffset: 15, // Increased
                             borderColor: '#ffffff', 
-                            borderWidth: 3, 
-                            hoverBorderColor: '#f3f4f6', // Added hover border
+                            borderWidth: 4, // Increased
+                            hoverBorderColor: '#ffffff', // Explicitly set
+                            hoverBorderWidth: 4, // Added
                         }]
                     },
                     options: {
                         responsive: true,
-                        cutout: '65%', 
+                        cutout: '70%', // Increased
                         animation: { 
                             // MODIFIED: Added delay
                             delay: 250, // Delay the start of the animation
@@ -2145,11 +2345,17 @@
                             easing: 'easeOutCubic'
                         },
                         plugins: {
+                            // --- NEW: Pass data to our custom plugin ---
+                            centerText: {
+                                percentage: percentage,
+                                color: percentageColorClass
+                            },
+                            // --- END NEW ---
                             legend: {
                                 position: 'bottom',
                                 labels: { 
                                     font: { family: 'Vazirmatn', size: 14 }, // Increased font size
-                                    padding: 25, 
+                                    padding: 20, // Decreased
                                     boxWidth: 15,
                                     usePointStyle: true, // Use circles
                                     pointStyle: 'circle'
@@ -2223,6 +2429,7 @@
                     // First, try to update the document
                     await db.updateDocument(DATABASE_ID, SETTINGS_COLLECTION_ID, quizId, { isActive: newStatus }); 
                     showToast('وضعیت آزمون به‌روزرسانی شد.', 'success'); // Add success feedback
+                    listenForQuizSettings(); // --- NEW: Refresh admin view on success
                 } 
                 catch (error) { 
                     if (error.code === 404) { // 404 = Document not found
@@ -2239,6 +2446,7 @@
                                 [Permission.read(Role.any()), Permission.write(Role.users())]
                             ); // <-- FIX: Closed the function call
                             showToast('تنظیمات آزمون ایجاد و ذخیره شد.', 'success');
+                            listenForQuizSettings(); // --- NEW: Refresh admin view on success
                         } catch (createError) {
                             console.error("Error CREATING quiz settings:", createError);
                             showToast('خطا در ایجاد تنظیمات. (دسترسی کالکشن را چک کنید)', 'error');
@@ -2276,6 +2484,7 @@
                     // First, try to update
                     await db.updateDocument(DATABASE_ID, SETTINGS_COLLECTION_ID, quizId, { price: newPrice }); 
                     showToast('قیمت با موفقیت به‌روزرسانی شد.', 'success');
+                    listenForQuizSettings(); // --- NEW: Refresh admin view on success
                 } 
                 catch (error) { 
                     if (error.code === 404) { // 404 = Document not found
@@ -2291,6 +2500,7 @@
                                 [Permission.read(Role.any()), Permission.write(Role.users())]
                             );
                             showToast('تنظیمات قیمت ایجاد و ذخیره شد.', 'success');
+                            listenForQuizSettings(); // --- NEW: Refresh admin view on success
                         } catch (createError) {
                             console.error("Error CREATING price settings:", createError);
                             showToast('خطا در ایجاد تنظیمات قیمت. (دسترسی کالکشن را چک کنید)', 'error');
