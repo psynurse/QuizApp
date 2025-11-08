@@ -935,8 +935,8 @@
                                         <div>
                                             <!-- <label for="register-password" class="block text-sm font-medium text-gray-700">رمز عبور (حداقل ۸ کاراکتر)</label> -->
                                             <div class="relative">
-                                                <!-- FIX: Changed placeholder from 8 to 6 characters -->
-                                                <input type="password" id="register-password" class="input-field mt-1 !pl-10" placeholder="رمز عبور (حداقل ۶ کاراکتر)" required>
+                                                <!-- FIX: Reverted placeholder to 8 characters to match server config -->
+                                                <input type="password" id="register-password" class="input-field mt-1 !pl-10" placeholder="رمز عبور (حداقل ۸ کاراکتر)" required>
                                                 <span class="absolute inset-y-0 left-0 flex items-center pl-3 cursor-pointer toggle-password-visibility">
                                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye text-gray-400" viewBox="0 0 16 16"><path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.816 1.123-2.455 2.226-4.223 2.659A5.006 5.006 0 0 1 8 10.5a5 5 0 0 1-2.605-.724A13.132 13.132 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/></svg>
                                                 </span>
@@ -1188,27 +1188,28 @@
                             <!-- MODIFICATION: Wrapper for horizontal scroll on mobile -->
                             <!-- On mobile: overflow-x-auto, flex, no-wrap, space-x-6 -->
                             <!-- On desktop: md:grid, md:grid-cols-3, md:gap-6 -->
-                            <div class="md:grid md:grid-cols-3 md:gap-6 flex overflow-x-auto space-x-6 rtl:space-x-reverse md:space-x-0 pb-4 custom-scrollbar">
+                            <!-- MODIFICATION: Changed container to grid for mobile stacking, removed scrollbar/flex props -->
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 
                                 <!-- Card 1: Course -->
-                                <!-- MODIFICATION: Added w-80 (320px) for mobile width, flex-shrink-0, and md:w-auto for desktop grid -->
-                                <div class="p-6 bg-green-50 rounded-2xl text-center flex flex-col items-center shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 w-80 md:w-auto flex-shrink-0">
+                                <!-- MODIFICATION: Removed w-80/flex-shrink-0, changed p-6 to p-4 -->
+                                <div class="p-4 bg-green-50 rounded-2xl text-center flex flex-col items-center shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
                                     <div class="p-3 bg-green-200 rounded-full mb-3"><svg class="w-8 h-8 text-green-700"  fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 14l9-5-9-5-9 5 9 5z" /><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" /></svg></div>
                                     <h3 class="text-lg font-bold text-green-800">دوره جامع روان پرستاری</h3>
                                     <p class="text-green-700 text-sm my-2 flex-grow">با شرکت در این دوره، شانس قبولی خود را تضمین کنید.</p>
                                     <a href="https://psynurse.ir/shop/online-c/P1062-%D8%AF%D9%88%D8%B1%D9%87-%D8%AC%D8%A7%D9%85%D8%B9-%D8%B1%D9%88%D8%A7%D9%86-%D9%BE%D8%B1%D8%B3%D8%AA%D8%A7%D8%B1%DB%8C-%D8%A7%D8%B1%D8%B4%D8%AF-%DB%B1%DB%B0%DB%B0%DB%B5.html" target="_blank" class="ad-link-btn btn bg-green-600 hover:bg-green-700 mt-2 !text-sm !py-2 !px-4">مشاهده دوره</a>
                                 </div>
                                 <!-- Card 2: Consultation -->
-                                <!-- MODIFICATION: Added w-80 (320px) for mobile width, flex-shrink-0, and md:w-auto for desktop grid -->
-                                <div class="p-6 bg-blue-50 rounded-2xl text-center flex flex-col items-center shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 w-80 md:w-auto flex-shrink-0">
+                                <!-- MODIFICATION: Removed w-80/flex-shrink-0, changed p-6 to p-4 -->
+                                <div class="p-4 bg-blue-50 rounded-2xl text-center flex flex-col items-center shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
                                     <div class="p-3 bg-blue-200 rounded-full mb-3"><svg class="w-8 h-8 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg></div>
                                     <h3 class="text-lg font-bold text-blue-800">مشاوره و برنامه‌ریزی</h3>
                                     <p class="text-blue-700 text-sm my-2 flex-grow">با مشاوره تخصصی خانم کلیج، مسیر خود را برای آزمون ارشد هموار کنید.</p>
                                     <a href="https://psynurse.ir/blog/%D9%85%D8%B4%D8%A7%D9%88%D8%B1%D9%87-%D9%88-%D8%A8%D8%B1%D9%86%D8%A7%D9%85%D9%87-%D8%B1%DB%8C%D8%B2%DB%8C/P1063-%D9%85%D8%B4%D8%A7%D9%88%D8%B1%D9%87-%D9%88-%D8%A8%D8%B1%D9%86%D8%A7%D9%85%D9%87-%D8%B1%DB%8C%D8%B2%DB%8C-%D8%A7%D8%B1%D8%B4%D8%AF-%D9%BE%D8%B1%D8%B3%D8%AA%D8%A7%D8%B1%DB%8C-%D8%AE%D8%A7%D9%86%D9%85-%D9%81%D8%A7%D8%B7%D9%85%D9%87-%DA%A9%D9%84%DB%8C%D8%AC-%DA%A9%D8%A7%D8%B1%D8%B4%D9%86%D8%A7%D8%B3-%D8%A7%D8%B1%D8%B4%D8%AF-%D8%A7%D8%B2-%D8%AF%D8%A7%D9%86%D8%B4%DA%AF%D8%A7%D9%87-%D8%B9%D9%84%D9%88%D9%85-%D9%BE%D8%B2%D8%B4%DA%A9%DB%8C-%D8%A7%D8%B5%D9%81%D9%87%D8%A7%D9%86.html" target="_blank" class="ad-link-btn btn bg-blue-600 hover:bg-blue-700 mt-2 !text-sm !py-2 !px-4">دریافت مشاوره</a>
                                 </div>
                                 <!-- Card 3: Book -->
-                                <!-- MODIFICATION: Added w-80 (320px) for mobile width, flex-shrink-0, and md:w-auto for desktop grid -->
-                                <div class="p-6 bg-amber-50 rounded-2xl text-center flex flex-col items-center shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 w-80 md:w-auto flex-shrink-0">
+                                <!-- MODIFICATION: Removed w-80/flex-shrink-0, changed p-6 to p-4 -->
+                                <div class="p-4 bg-amber-50 rounded-2xl text-center flex flex-col items-center shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
                                     <div class="p-3 bg-amber-200 rounded-full mb-3"><svg class="w-8 h-8 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg></div>
                                     <h3 class="text-lg font-bold text-amber-800">کتاب تست اوج روان</h3>
                                     <p class="text-amber-700 text-sm my-2 flex-grow">منبعی کامل و ضروری برای تسلط بر تست‌های روان پرستاری.</p>
@@ -1573,32 +1574,65 @@
                 
                 toggleButtonLoading(submitBtn, true, 'ثبت نام');
                 
+                let userAccount; // <-- متغیر برای نگهداری حساب کاربری جهت پاک کردن در صورت خطا
+                
                 try {
-                    // 1. Check if phone is already registered (Appwrite Query) - REMOVED FOR PERMISSIONS
-                    /*
+                    // 1. Check if phone is already registered (Appwrite Query)
+                    // --- NEW: This check is now active. ---
+                    // توجه: این قابلیت نیازمند فعال کردن دسترسی خواندن (Read) در سطح کالکشن (Collection Level)
+                    // برای 'Role.any()' یا 'Role.guests()' در کالکشن 'users' در پنل Appwrite است.
+                    // دسترسی‌های سطح سند (Document Level) همچنان از اطلاعات کاربران محافظت خواهد کرد.
+                    /* --- REMOVED UNRELIABLE PRE-CHECK ---
                     const phoneCheck = await db.listDocuments(
                         DATABASE_ID,
                         USERS_COLLECTION_ID,
                         [Query.equal("phone", phone)]
                     );
-                    if (phoneCheck.total > 0) throw { code: 'phone-number-already-in-use' };
                     */
+                    
+                    // 1. Try to create user in Appwrite Auth (This checks for duplicate email)
+                    // let userAccount; // <-- Moved up
+                    let emailError = null;
+                    try {
+                         userAccount = await account.create(
+                            ID.unique(), // User ID
+                            email,
+                            password,
+                            name
+                        );
+                    } catch (authError) {
+                        // فقط خطای ایمیل تکراری را مدیریت کن، بقیه خطاها پرتاب شوند
+                        if (authError.type === 'user_already_exists') {
+                            emailError = authError;
+                        } else {
+                            throw authError; // Re-throw other auth errors
+                        }
+                    }
 
-                    // 2. Create user in Appwrite Auth
-                    const userAccount = await account.create(
-                        ID.unique(), // User ID
-                        email,
-                        password,
-                        name
-                    );
+                    // 3. Now check the results and throw combined errors
+                    // const isPhoneDuplicate = phoneCheck.total > 0; // <-- REMOVED
+                    const isEmailDuplicate = !!emailError;
+
+                    /* --- REMOVED PRE-CHECK LOGIC ---
+                    if (isPhoneDuplicate && isEmailDuplicate) {
+                        throw { code: 'phone-and-email-already-in-use' };
+                    } else if (isPhoneDuplicate) {
+                        throw { code: 'phone-number-already-in-use' };
+                    } else */
+                    if (isEmailDuplicate) {
+                        throw emailError; // Throw the original email error
+                    }
+                    // --- END REMOVED LOGIC ---
+                    
                     
                     // --- FIX: LOGIC CHANGE ---
-                    // 3. Create session and log in FIRST
+                    // 2. Create session and log in FIRST
                     // This ensures the next call is made as an authenticated 'user', not a 'guest'
                     await account.createEmailSession(email, password);
 
-                    // 4. Create user profile document in Database (ID must be the same as Auth ID)
+                    // 3. Create user profile document in Database (ID must be the same as Auth ID)
                     // This is now called as 'Role: Users'
+                    // *** THIS WILL FAIL IF 'phone' IS DUPLICATE (due to unique index) ***
                     await db.createDocument(
                         DATABASE_ID,
                         USERS_COLLECTION_ID,
@@ -1616,28 +1650,74 @@
                     // 4. Create session and log in - MOVED UP
                     // await account.createEmailPasswordSession(email, password);
                     
+                    // 4. Success
                     showToast('ثبت نام با موفقیت انجام شد!', 'success');
                     loadUserSession();
 
                 } catch (error) {
-                    const errorMap = {
-                        'user_already_exists': 'این ایمیل قبلاً ثبت نام کرده است.',
-                        'phone-number-already-in-use': 'این شماره تماس قبلاً ثبت نام کرده است.', // This error is no longer triggered by our code, but good to keep
-                        // FIX: Changed error message from 8 to 6 characters
-                        'Invalid password': 'رمز عبور باید حداقل ۶ کاراکتر باشد.', // Appwrite default
-                        'general_storage': 'خطا در ذخیره پروفایل. لطفاً دوباره تلاش کنید.',
-                        'user_permission_denied': 'خطای دسترسی دیتاب B. (تنظیمات Permission را چک کنید)', // Appwrite permission error
-                    };
+                    console.error("Registration Error: ", error); // Log the full error
+                    // --- NEW: Log code and type for debugging ---
+                    console.log("Error details: code =", error.code, ", type =", error.type); 
                     
-                    let errorMessage = 'خطا در ثبت نام. دوباره تلاش کنید.';
-                    if (error.code === 'user_permission_denied' || (error.message && error.message.toLowerCase().includes('permission'))) {
-                        errorMessage = 'خطای دسترسی دیتابیس. (تنظیمات Permission کالکشن users را در پنل Appwrite چک کنید)';
-                    } else if (errorMap[error.code]) {
-                        errorMessage = errorMap[error.code];
-                    }
+                    // --- NEW: More specific error handling ---
+                    const errorType = error.type; // Appwrite error type string
+                    const errorCode = error.code; // Custom error code
+                    let errorMessage = 'خطا در ثبت نام. دوباره تلاش کنید.'; // Default message
 
+                    // --- NEW: Handle custom combined errors ---
+                    /* --- REMOVED ---
+                    if (errorCode === 'phone-and-email-already-in-use') {
+                        errorMessage = 'این ایمیل و شماره تماس قبلاً ثبت نام کرده‌اند.';
+                    } else if (errorCode === 'phone-number-already-in-use') {
+                        errorMessage = 'این شماره تماس قبلاً ثبت نام کرده است.';
+                    // --- END NEW ---
+                    } else */
+                    if (errorType === 'user_already_exists') {
+                        errorMessage = 'این ایمیل قبلاً ثبت نام کرده است.';
+                    
+                    // --- MODIFICATION: Check for error.type as well as error.code ---
+                    } else if (error.code === 409 || (error.type && error.type.includes('index_violation'))) { 
+                        // This error happens if the db.createDocument fails due to a unique index
+                        errorMessage = 'این شماره تماس قبلاً ثبت نام کرده است.';
+                        console.warn("Unique index violation (409) detected for phone.");
+                        
+                        // --- CRITICAL CLEANUP STEP ---
+                        // The auth account was created, but the db doc failed.
+                        // We must delete the auth account to let the user try again.
+                        // We are already logged in (from createEmailSession), so we have permission.
+                        try {
+                            if (userAccount) { // Ensure userAccount was defined
+                                await account.delete(userAccount.$id); // Delete the new auth user
+                            }
+                            // We also need to delete the session we just created
+                            await account.deleteSession('current'); 
+                            console.log("Cleaned up orphaned auth account due to duplicate phone.");
+                        } catch (cleanupError) {
+                            console.error("CRITICAL: Failed to clean up orphaned auth account:", cleanupError);
+                            errorMessage = 'خطا. شماره تماس تکراری است، اما ایمیل شما اکنون ثبت شده. با استاد تماس بگیرید.';
+                        }
+                        // --- END CLEANUP ---
+
+                    } else if (errorType === 'user_phone_already_exists') {
+                        // This might be the correct type if the server checks it
+                        errorMessage = 'این شماره تماس قبلاً ثبت نام کرده است.';
+                    } else if (errorType === 'user_password_invalid') {
+                        // This is the key one.
+                        // We will use the server's (correct) requirement of 8 chars.
+                        errorMessage = 'رمز عبور نامعتبر است. باید حداقل ۸ کاراکتر باشد.';
+                    } else if (errorType === 'user_email_invalid') {
+                        errorMessage = 'فرمت ایمیل نامعتبر است.';
+                    } else if (error.code === 401 || (error.message && error.message.toLowerCase().includes('permission'))) {
+                        // This handles database permission errors
+                        errorMessage = 'خطای دسترسی دیتابIS. (برای چک کردن شماره تماس، کالکشن users به دسترسی خواندن Read برای Role.any نیاز دارد)';
+                        console.error("--- PERMISSION ERROR ---: To check for duplicate phones, the 'users' collection needs Collection-Level 'Read' access for 'Role.any()' in the Appwrite panel.");
+                    } else if (error.message && error.message.toLowerCase().includes('network request failed')) {
+                        errorMessage = 'خطا در اتصال. دقایقی دیگر وارد شوید.';
+                    }
+                    
                     errorEl.textContent = errorMessage;
-                    console.error("Registration Error: ", error); 
+                    // --- END NEW ---
+                    
                     // Clean up account if document creation fails (optional, but good practice)
                     // Note: Client-side cleanup of auth account is not feasible without admin rights or a user session.
                     // The user must manually delete the "Auth" user in Appwrite panel before trying again with the same email.
@@ -1662,9 +1742,15 @@
                     console.error("Login Error: ", error); // Log the error regardless
                     if (error.message && error.message.toLowerCase().includes('network request failed')) {
                         errorEl.textContent = 'خطا در اتصال. دقایقی دیگر وارد شوید.';
+                    // --- NEW: More specific error ---
+                    } else if (error.code === 401) { // 401 Unauthorized
+                        errorEl.textContent = 'ایمیل یا رمز عبور اشتباه است.';
+                    } else if (error.code === 400) { // 400 Bad Request (e.g., invalid email format)
+                        errorEl.textContent = 'فرمت ایمیل یا رمز عبور نامعتبر است.';
+                    // --- END NEW ---
                     } else {
-                        // Default error for 401 (wrong pass) or other issues
-                        errorEl.textContent = 'ایمیل یا رمز عبور اشتباه است.'; 
+                        // Default error for other issues
+                        errorEl.textContent = 'خطا در ورود. لطفاً دوباره تلاش کنید.'; 
                     }
                     // --- END MODIFICATION ---
                 } finally {
