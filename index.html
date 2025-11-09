@@ -569,14 +569,35 @@
             // Helper function to handle Appwrite's query API
             async function fetchDocuments(collectionId, queries = [], isSingleDoc = false) {
                 try {
-                    const response = await db.listDocuments(
-                        DATABASE_ID,
-                        collectionId,
-                        queries
-                    );
+                    // --- NEW: Pagination logic to fetch ALL documents ---
+                    let documents = [];
+                    let offset = 0;
+                    const limit = 100; // Appwrite's max limit per request
+                    let response;
+                    
+                    do {
+                        // Clone the queries array and add limit/offset
+                        const paginatedQueries = [
+                            ...queries, 
+                            Query.limit(limit), 
+                            Query.offset(offset)
+                        ];
+                        
+                        response = await db.listDocuments(
+                            DATABASE_ID,
+                            collectionId,
+                            paginatedQueries
+                        );
+                        
+                        documents = documents.concat(response.documents);
+                        offset += limit;
+                        
+                    } while (documents.length < response.total);
+                    // --- END NEW PAGINATION LOGIC ---
+
                     
                     // Add document ID and parse JSON strings
-                    const documents = response.documents.map(doc => {
+                    const processedDocuments = documents.map(doc => { // <-- Use 'documents' array from loop
                         const cleanDoc = { id: doc.$id, ...doc };
                         // Appwrite saves 'questions' and 'aiAnalysis' as large strings, parse them back to objects/arrays
                         if (cleanDoc.questions && typeof cleanDoc.questions === 'string') {
@@ -588,8 +609,8 @@
                         return cleanDoc;
                     });
 
-                    if (isSingleDoc) return documents[0] || null;
-                    return documents;
+                    if (isSingleDoc) return processedDocuments[0] || null;
+                    return processedDocuments; // <-- Return processed documents
                 } catch (error) {
                     // FIX: Added specific instruction for the common Appwrite permissions issue on listDocuments
                     if (collectionId === PAYMENTS_COLLECTION_ID && currentUser) {
@@ -3037,7 +3058,13 @@
                 let resultsForQuiz = allAdminResults.filter(r => r.quizId === quizId);
                 
                 if (searchTerm) {
-                    resultsForQuiz = resultsForQuiz.filter(res => res.name.toLowerCase().includes(searchTerm) || res.userEmail.toLowerCase().includes(searchTerm));
+                    resultsForQuiz = resultsForQuiz.filter(res => {
+                        // --- FIX: Add safety checks for null/undefined values ---
+                        const nameMatch = res.name && res.name.toLowerCase().includes(searchTerm);
+                        const emailMatch = res.userEmail && res.userEmail.toLowerCase().includes(searchTerm);
+                        return nameMatch || emailMatch;
+                        // --- END FIX ---
+                    });
                 }
 
                 const totalParticipants = resultsForQuiz.length;
@@ -3220,6 +3247,9 @@
                     quizId: quizState.quizId, 
                     userId: currentUser.$id, // Appwrite User ID
                     name: userProfile.name, 
+                    // --- NEW: Add userEmail for admin search ---
+                    userEmail: userProfile.email,
+                    // --- END NEW ---
                     answers: userAnswersStrings, // Save as String Array
                     correct, incorrect, unanswered, score, 
                     // --- MODIFICATION: Removed Math.max(0, ...) ---
@@ -3261,8 +3291,29 @@
                     [Query.equal("quizId", resultData.quizId), Query.select(['score'])]
                 );
                 
-                const allScoresForThisQuiz = snapshot.documents.map(doc => doc.score).sort((a, b) => b - a);
+                // --- FIX: Logic to prevent Rank 0 Bug (Race Condition) ---
+                
+                // 1. Get all scores currently in the database
+                let allScoresForThisQuiz = snapshot.documents.map(doc => doc.score);
+                
+                // 2. Check if the user's new score is already in that list.
+                // (It might not be, if this read operation was faster than the write operation from finishQuiz)
+                const userScoreExistsInList = allScoresForThisQuiz.includes(resultData.score);
+                
+                // 3. If the user's score isn't in the list, add it manually
+                //    This ensures the user is always included in the ranking calculation.
+                if (!userScoreExistsInList) {
+                    allScoresForThisQuiz.push(resultData.score);
+                }
+                
+                // 4. Now sort the (guaranteed complete) list
+                allScoresForThisQuiz.sort((a, b) => b - a);
+                
+                // 5. Find the rank. This will now always find the score.
                 const rank = allScoresForThisQuiz.indexOf(resultData.score) + 1;
+                
+                // --- END FIX ---
+                
                 renderView('result', { resultData, rank: `${rank} از ${allScoresForThisQuiz.length}`, origin });
             }
             
