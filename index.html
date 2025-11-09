@@ -3285,16 +3285,19 @@
 
             async function displayResults(resultData, origin = 'student') {
                 // Fetch all scores for ranking (Appwrite Query)
-                const snapshot = await db.listDocuments(
-                    DATABASE_ID, 
+                // --- FIX: Use fetchDocuments to get ALL results, not just the first 25 ---
+                const allResultsForThisQuiz_Docs = await fetchDocuments(
                     RESULTS_COLLECTION_ID, 
                     [Query.equal("quizId", resultData.quizId), Query.select(['score'])]
                 );
+                // --- END FIX ---
                 
                 // --- FIX: Logic to prevent Rank 0 Bug (Race Condition) ---
                 
                 // 1. Get all scores currently in the database
-                let allScoresForThisQuiz = snapshot.documents.map(doc => doc.score);
+                // --- MODIFICATION: Use the 'allResultsForThisQuiz_Docs' variable from fetchDocuments ---
+                let allScoresForThisQuiz = allResultsForThisQuiz_Docs.map(doc => doc.score);
+                // --- END MODIFICATION ---
                 
                 // 2. Check if the user's new score is already in that list.
                 // (It might not be, if this read operation was faster than the write operation from finishQuiz)
