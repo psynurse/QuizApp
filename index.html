@@ -539,6 +539,9 @@
             let currentUser = null;
             let userProfile = null;
             let userPayments = [];
+            // --- NEW: Global variable for user results ---
+            let userResults = [];
+            // --- END NEW ---
             let quizSettings = {};
             let discounts = [];
             let allQuizzes = {};
@@ -548,7 +551,7 @@
             const mainContainer = document.getElementById('main-container');
             let quizState = null; // <--- متغیر آزمون در حال اجرا
             let isHandlingPopState = false; // --- NEW: Flag to prevent history loops
-            let studentDashboardPoller = null; // --- NEW: Interval for auto-refreshing student dashboard
+            let realtimeUnsubscribes = []; // --- MODIFICATION: Replaced studentDashboardPoller
 
             // --- UTILITY & AI FUNCTIONS ---
             
@@ -648,6 +651,7 @@
 
                     // --- Start Data Listeners ---
                     // Appwrite uses polling or WebSockets. We will use simple polling via listDocuments for simplicity.
+                    /* --- MODIFICATION: Removed individual listeners ---
                     listenForQuizzes(); 
                     listenForPackages();
                     listenForQuizSettings();
@@ -655,6 +659,51 @@
                     listenForUserPayments();
                     
                     renderView('studentDashboard'); // Success: Render dashboard
+                    --- END MODIFICATION --- */
+
+                    // --- NEW: Fetch all data concurrently with Promise.all ---
+                    try {
+                        // console.log("Fetching all initial data concurrently...");
+                        const [quizzesDocs, packagesDocs, settingsDocs, discountsDocs, paymentsDocs, resultsDocs] = await Promise.all([
+                            fetchDocuments(QUIZZES_COLLECTION_ID),
+                            fetchDocuments(PACKAGES_COLLECTION_ID),
+                            fetchDocuments(SETTINGS_COLLECTION_ID),
+                            fetchDocuments(DISCOUNTS_COLLECTION_ID),
+                            fetchDocuments(PAYMENTS_COLLECTION_ID, [Query.equal("userId", currentUser.$id)]),
+                            // --- NEW: Fetch user's results on initial load ---
+                            fetchDocuments(RESULTS_COLLECTION_ID, [Query.equal("userId", currentUser.$id)])
+                            // --- END NEW ---
+                        ]);
+                        // console.log("All initial data fetched successfully.");
+
+                        // Process and assign to global variables
+                        allQuizzes = {};
+                        quizzesDocs.forEach(doc => allQuizzes[doc.id] = doc);
+                        
+                        allPackages = {};
+                        packagesDocs.forEach(doc => allPackages[doc.id] = doc);
+                        
+                        quizSettings = {};
+                        settingsDocs.forEach(doc => quizSettings[doc.id] = doc);
+                        
+                        discounts = discountsDocs.map(doc => ({ id: doc.id, ...doc }));
+                        
+                        userPayments = paymentsDocs;
+
+                        // --- NEW: Assign to global variable ---
+                        userResults = resultsDocs;
+                        // --- END NEW ---
+
+                        // Now that all data is ready, render the dashboard ONCE
+                        renderView('studentDashboard');
+
+                    } catch (dataError) {
+                        // This catches errors if ANY of the fetchDocuments calls fail
+                        console.error("Failed to load critical initial data:", dataError);
+                        showToast("خطا در بارگذاری اطلاعات. لطفاً صفحه را رفرش کنید.", 'error');
+                        renderView('auth'); // Kick user back to login
+                    }
+                    // --- END NEW Promise.all LOGIC ---
 
                 } catch (error) {
                     // User is not logged in or session expired or Network error
@@ -1331,10 +1380,7 @@
             // --- VIEW RENDERING ENGINE (FIXED) ---
             const renderView = (viewName, props = {}) => {
                 // --- NEW: Clear dashboard poller when navigating away ---
-                if (studentDashboardPoller) {
-                    clearInterval(studentDashboardPoller);
-                    studentDashboardPoller = null;
-                }
+                unsubscribeRealtime(); // --- MODIFICATION: Replaced poller logic
                 // --- END NEW ---
 
                 const viewTemplate = viewContentMap[viewName];
@@ -1382,17 +1428,10 @@
 
                 attachEventListeners(viewName, props);
                 
-                // --- NEW: Start poller if on student dashboard ---
+                // --- NEW: Start listeners if on student dashboard ---
                 if (viewName === 'studentDashboard') {
-                    // console.log("Starting dashboard poller...");
-                    studentDashboardPoller = setInterval(() => {
-                        // console.log("Polling for updates...");
-                        // These functions will automatically refresh the view if it's still 'studentDashboard'
-                        listenForQuizzes(); 
-                        listenForPackages();
-                        listenForQuizSettings();
-                        listenForDiscounts();
-                    }, 30000); // Poll every 30 seconds (30,000 ms)
+                    // console.log("Starting realtime listeners...");
+                    setupRealtimeListeners(); // --- MODIFICATION: Replaced poller logic
                 }
                 // --- END NEW ---
             };
@@ -1541,8 +1580,19 @@
                 isHandlingPopState = true; // Set flag to prevent renderView from pushing state again
                 
                 if (event.state && event.state.view) {
-                    // We have a valid state, render the view from history
-                    renderView(event.state.view, event.state.props || {});
+                    // --- FIX: START ---
+                    // If the user is going back to the dashboard, we MUST re-fetch all data
+                    // (especially userResults and userPayments) to avoid stale data issues.
+                    // Simply calling renderView() will use the old global variables.
+                    // loadUserSession() fetches fresh data first, then calls renderView.
+                    if (event.state.view === 'studentDashboard') {
+                        // به جای رندر ساده، کل اطلاعات را دوباره بارگذاری کن
+                        loadUserSession();
+                    } else {
+                        // For other views (e.g., admin panel), simple render is fine
+                        renderView(event.state.view, event.state.props || {});
+                    }
+                    // --- FIX: END ---
                 } else {
                     // This happens if the user goes back to the very first page load (state is null)
                     // The safest action is to re-run the session check, which will
@@ -1562,7 +1612,70 @@
 
             // --- HANDLER FUNCTIONS ---
 
+            // --- NEW: Added back missing handleLogin function ---
+            const handleLogin = async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('login-email').value.trim();
+                const password = document.getElementById('login-password').value;
+                const errorEl = document.getElementById('login-error');
+                const submitBtn = document.getElementById('login-submit-btn');
+                errorEl.textContent = '';
+
+                if (!email || !password) {
+                    errorEl.textContent = 'لطفاً ایمیل و رمز عبور را وارد کنید.';
+                    return;
+                }
+
+                toggleButtonLoading(submitBtn, true, 'ورود');
+                
+                try {
+                    // Create Appwrite session
+                    await account.createEmailSession(email, password);
+                    // On success, loadUserSession will fetch data and render dashboard
+                    loadUserSession();
+                } catch (error) {
+                    console.error("Login Error:", error);
+                    if (error.type === 'user_invalid_credentials') {
+                        errorEl.textContent = 'ایمیل یا رمز عبور نامعتبر است.';
+                    } else if (error.message && error.message.toLowerCase().includes('rate limit')) {
+                        errorEl.textContent = 'تلاش بیش از حد. دقایقی دیگر وارد شوید.';
+                    } else {
+                        errorEl.textContent = 'خطا در ورود. اتصال خود را بررسی کنید.';
+                    }
+                } finally {
+                    toggleButtonLoading(submitBtn, false, 'ورود');
+                }
+            };
+            // --- END NEW ---
+
+            // --- NEW: Added back missing handleQuizSearch function ---
+            function handleQuizSearch(e) {
+                const searchTerm = e.target.value.toLowerCase().trim();
+                
+                const filteredQuizzes = {};
+                for (const quizId in allQuizzes) {
+                    const quiz = allQuizzes[quizId];
+                    if (quiz.title.toLowerCase().includes(searchTerm) || (quiz.topics && quiz.topics.some(topic => topic.toLowerCase().includes(searchTerm)))) {
+                        filteredQuizzes[quizId] = quiz;
+                    }
+                }
+
+                const filteredPackages = {};
+                for (const pkgId in allPackages) {
+                    const pkg = allPackages[pkgId];
+                    if (pkg.title.toLowerCase().includes(searchTerm)) {
+                        filteredPackages[pkgId] = pkg;
+                    }
+                }
+
+                loadStudentQuizzes(filteredQuizzes, filteredPackages, true); // Pass true for isSearch
+            }
+            // --- END NEW ---
+
             const handleLogout = async () => {
+                // --- NEW: Unsubscribe from realtime ---
+                unsubscribeRealtime();
+                // --- END NEW ---
                 try {
                     // FIX: Only attempt to delete the session if currentUser object exists (i.e., not a guest trying to delete a non-existent session)
                     if (currentUser) {
@@ -1747,179 +1860,80 @@
                 }
             };
 
-            const handleLogin = async (e) => {
-                 e.preventDefault();
-                const email = document.getElementById('login-email').value.trim(), password = document.getElementById('login-password').value;
-                const errorEl = document.getElementById('login-error'), submitBtn = document.getElementById('login-submit-btn');
-                toggleButtonLoading(submitBtn, true, 'ورود');
-                errorEl.textContent = '';
-                
-                try { 
-                    await account.createEmailSession(email, password);
-                    loadUserSession(); // Load dashboard on success
-                } 
-                catch (error) {
-                    // --- MODIFICATION: Check for network error vs. auth error ---
-                    console.error("Login Error: ", error); // Log the error regardless
-                    if (error.message && error.message.toLowerCase().includes('network request failed')) {
-                        errorEl.textContent = 'خطا در اتصال. دقایقی دیگر وارد شوید.';
-                    // --- NEW: More specific error ---
-                    } else if (error.code === 401) { // 401 Unauthorized
-                        errorEl.textContent = 'ایمیل یا رمز عبور اشتباه است.';
-                    } else if (error.code === 400) { // 400 Bad Request (e.g., invalid email format)
-                        errorEl.textContent = 'فرمت ایمیل یا رمز عبور نامعتبر است.';
-                    // --- END NEW ---
-                    } else {
-                        // Default error for other issues
-                        errorEl.textContent = 'خطا در ورود. لطفاً دوباره تلاش کنید.'; 
-                    }
-                    // --- END MODIFICATION ---
-                } finally {
-                    toggleButtonLoading(submitBtn, false, 'ورود');
+            // --- NEW: Realtime Listener Functions ---
+            function unsubscribeRealtime() {
+                if (realtimeUnsubscribes.length > 0) {
+                    // console.log("Unsubscribing from all realtime listeners...");
+                    realtimeUnsubscribes.forEach(unsub => unsub());
+                    realtimeUnsubscribes = [];
                 }
-            };
-            
-            async function handlePayment(itemId, itemType) {
-                let item, originalPrice, finalPrice;
-                
-                if (itemType === 'quiz') {
-                    item = allQuizzes[itemId];
-                    originalPrice = quizSettings[itemId]?.price ?? item.price;
-                    finalPrice = originalPrice;
-                } else { // itemType === 'package'
-                    item = allPackages[itemId];
-                    originalPrice = item.price;
-                    
-                    // Calculate discounted price based on already purchased quizzes
-                    const approvedQuizPayments = userPayments.filter(p => p.status === 'approved' && p.itemType === 'quiz').map(p => p.itemId);
-                    
-                    // --- MODIFIED LOGIC: Limit discount to only ONE (the most expensive) owned quiz ---
-                    // 1. Find the prices of all quizzes in the package that the user already owns.
-                    const ownedQuizPrices = [];
-                    item.quizIds.forEach(quizId => {
-                        if (approvedQuizPayments.includes(quizId) && allQuizzes[quizId]) {
-                            const quizPrice = quizSettings[quizId]?.price ?? allQuizzes[quizId].price;
-                            ownedQuizPrices.push(quizPrice);
+            }
+
+            function setupRealtimeListeners() {
+                // console.log("Setting up realtime listeners...");
+                unsubscribeRealtime(); // Clear old ones just in case
+
+                const dbPath = `databases.${DATABASE_ID}.collections`;
+
+                // --- 1. Subscribe to Payments ---
+                // Appwrite permissions will only send events for documents this user can read (i.e., their own)
+                realtimeUnsubscribes.push(client.subscribe(
+                    `${dbPath}.${PAYMENTS_COLLECTION_ID}.documents`,
+                    (response) => {
+                        // console.log("Realtime: Payment update received", response);
+                        // We only care if the update (create, update, delete) is for this user
+                        if (response.payload.userId === currentUser.$id) {
+                            // console.log("Realtime: Payment update is for this user. Refreshing payments.");
+                            // listenForUserPayments() automatically re-fetches payments AND re-renders the dashboard
+                            listenForUserPayments(); 
                         }
-                    });
-
-                    // 2. Find the maximum price among them to be used as the discount.
-                    let discountForOwnedQuizzes = 0;
-                    if (ownedQuizPrices.length > 0) {
-                        // Math.max() will find the single highest price in the array
-                        discountForOwnedQuizzes = Math.max(...ownedQuizPrices);
                     }
-                    // --- END MODIFIED LOGIC ---
-                    
-                    finalPrice = Math.max(0, originalPrice - discountForOwnedQuizzes);
-                }
+                ));
 
-                renderView('paymentInstructions', { itemId, itemType, originalPrice, finalPrice });
-            }
-            
-            async function handlePaymentSubmission(e, itemId, itemType, finalPrice) {
-                e.preventDefault();
-                // --- MODIFICATION: Get file instead of digits ---
-                const fileInput = document.getElementById('payment-screenshot');
-                const file = fileInput.files[0];
-                
-                if (!file) { document.getElementById('payment-submit-error').textContent = 'لطفاً یک اسکرین‌شات انتخاب کنید.'; return; }
-                if (file.size > 5 * 1024 * 1024) { // 5MB limit
-                    document.getElementById('payment-submit-error').textContent = 'حجم فایل باید کمتر از ۵ مگابایت باشد.'; return;
-                }
-                // --- END MODIFICATION ---
-
-                const submitBtn = document.getElementById('submit-payment-btn');
-                toggleButtonLoading(submitBtn, true, 'در حال آپلود');
-                document.getElementById('payment-submit-error').textContent = '';
-                
-                const item = itemType === 'quiz' ? allQuizzes[itemId] : allPackages[itemId];
-                
-                try {
-                    // --- NEW: Upload file to Storage ---
-                    const uploadResponse = await storage.createFile(
-                        SCREENSHOT_BUCKET_ID,
-                        ID.unique(),
-                        file
-                    );
-                    const screenshotId = uploadResponse.$id;
-                    // --- END NEW ---
-                    
-                    toggleButtonLoading(submitBtn, true, 'در حال ثبت');
-
-                    // Add document to Appwrite Payments collection
-                    await db.createDocument(
-                        DATABASE_ID,
-                        PAYMENTS_COLLECTION_ID,
-                        ID.unique(),
-                        { 
-                            userId: currentUser.$id, 
-                            userName: userProfile.name, 
-                            userEmail: userProfile.email,
-                            itemId, 
-                            itemType, 
-                            itemTitle: item.title, 
-                            // --- MODIFICATION: Save screenshotId instead of lastFourDigits ---
-                            screenshotId: screenshotId,
-                            // --- END MODIFICATION ---
-                            finalPrice: finalPrice, 
-                            status: 'pending', 
-                            timestamp: new Date().toISOString() // Appwrite Datetime format
-                        },
-                        // Permissions: Only the user can read, and any user (admin) can update/delete
-                        [Permission.read(Role.user(currentUser.$id)), Permission.write(Role.users())]
-                    );
-                    
-                    showModal(
-                        'ثبت با موفقیت انجام شد', 
-                        'اطلاعات واریز شما با موفقیت ثبت شد. پس از تایید توسط استاد، دسترسی شما فعال خواهد شد.',
-                        'متوجه شدم',
-                        null,
-                        loadUserSession
-                    );
-
-                } catch (error) {
-                    console.error("Error submitting payment:", error);
-                    // --- NEW: Check for storage errors ---
-                    if (error.message && error.message.toLowerCase().includes('bucket_not_found')) {
-                        document.getElementById('payment-submit-error').textContent = 'خطای سرور: باکت (Bucket) یافت نشد.';
-                        showToast('خطای سرور (Bucket). لطفاً با استاد تماس بگیرید.', 'error');
-                    } else if (error.code === 401 || (error.message && error.message.toLowerCase().includes('permission'))) {
-                        document.getElementById('payment-submit-error').textContent = 'خطای دسترسی. (Permissions کالکشن/باکت را در Appwrite چک کنید)';
-                        showToast('خطای دسترسی سرور. لطفاً با استاد تماس بگیرید.', 'error');
-                    } else {
-                        document.getElementById('payment-submit-error').textContent = 'خطا در ثبت اطلاعات.';
+                // --- NEW: 2. Subscribe to Results (for this user) ---
+                realtimeUnsubscribes.push(client.subscribe(
+                    `${dbPath}.${RESULTS_COLLECTION_ID}.documents`,
+                    (response) => {
+                        // console.log("Realtime: Result update received", response);
+                        // We only care if the update (create, update, delete) is for this user
+                        if (response.payload.userId === currentUser.$id) {
+                            // console.log("Realtime: Result update is for this user. Refreshing results.");
+                            listenForUserResults(); // Call the new listener function
+                        }
                     }
-                } finally {
-                    toggleButtonLoading(submitBtn, false, 'ثبت و انتظار برای تایید');
-                }
-            }
+                ));
+                // --- END NEW ---
 
-            function handleQuizSearch(e) {
-                // ... (search implementation unchanged)
-                const searchTerm = e.target.value.toLowerCase().trim();
-                const quizzesToFilter = Object.entries(allQuizzes);
-                
-                const filteredQuizzes = quizzesToFilter.filter(([quizId, quizData]) => {
-                    const titleMatch = quizData.title.toLowerCase().includes(searchTerm);
-                    const topicMatch = quizData.topics && quizData.topics.some(topic => topic.toLowerCase().includes(searchTerm));
-                    return titleMatch || topicMatch;
-                });
-                
-                const packagesToFilter = Object.entries(allPackages);
-                const filteredPackages = packagesToFilter.filter(([pkgId, pkgData]) => {
-                     const titleMatch = pkgData.title.toLowerCase().includes(searchTerm);
-                     // Also search in the titles of the quizzes within the package
-                     const quizInPackageMatch = pkgData.quizIds.some(quizId => 
-                        allQuizzes[quizId] && allQuizzes[quizId].title.toLowerCase().includes(searchTerm)
-                     );
-                     return titleMatch || quizInPackageMatch;
-                });
+                // --- 3. Subscribe to Public Data (Quizzes, Packages, Settings, Discounts) ---
+                const publicCollections = [
+                    QUIZZES_COLLECTION_ID,
+                    PACKAGES_COLLECTION_ID,
+                    SETTINGS_COLLECTION_ID,
+                    DISCOUNTS_COLLECTION_ID
+                ];
 
-                loadStudentQuizzes(Object.fromEntries(filteredQuizzes), Object.fromEntries(filteredPackages), true);
+                const publicListeners = {
+                    [QUIZZES_COLLECTION_ID]: listenForQuizzes,
+                    [PACKAGES_COLLECTION_ID]: listenForPackages,
+                    [SETTINGS_COLLECTION_ID]: listenForQuizSettings,
+                    [DISCOUNTS_COLLECTION_ID]: listenForDiscounts
+                };
+
+                publicCollections.forEach(collectionId => {
+                    realtimeUnsubscribes.push(client.subscribe(
+                        `${dbPath}.${collectionId}.documents`,
+                        (response) => {
+                            // console.log(`Realtime: Update in ${collectionId}`, response);
+                            // Call the corresponding listener function.
+                            // That function will fetch new data and update the *current* view (student or admin)
+                            if (publicListeners[collectionId]) {
+                                publicListeners[collectionId]();
+                            }
+                        }
+                    ));
+                });
             }
-            
-            // --- DATA LISTENERS (Modified to use Appwrite listDocuments) ---
+            // --- END NEW Realtime Functions ---
 
             function listenForQuizzes() {
                  fetchDocuments(QUIZZES_COLLECTION_ID).then(docs => {
@@ -1951,25 +1965,37 @@
                     quizSettings = {};
                     docs.forEach(doc => quizSettings[doc.id] = doc);
                     if (mainContainer.querySelector('#available-quizzes-container')) loadStudentQuizzes();
-                    if (mainContainer.querySelector('#quiz-management-container')) renderAdminQuizManagement();
-                    if (mainContainer.querySelector('#admin-prices-container')) renderAdminPriceManagement();
-                });
+                }); // <-- FIX: Added missing parenthesis
             }
 
+            // --- NEW: Added missing listenForDiscounts function ---
             function listenForDiscounts() {
                 fetchDocuments(DISCOUNTS_COLLECTION_ID).then(docs => {
+                    // Assign to the global array
                     discounts = docs.map(doc => ({ id: doc.id, ...doc }));
-                    if (mainContainer.querySelector('#admin-discounts-container')) renderAdminDiscounts();
+                    
+                    // Check if the admin is currently viewing the discounts tab
+                    const isAdminView = mainContainer.querySelector('#admin-discounts-container');
+                    if (isAdminView) {
+                        // If so, re-render the discounts list to show the update
+                        renderAdminDiscounts();
+                    }
                 });
             }
+            // --- END NEW ---
 
-            function listenForUserPayments() {
-                // Filter payments for the current user
-                fetchDocuments(PAYMENTS_COLLECTION_ID, [Query.equal("userId", currentUser.$id)]).then(docs => {
-                    userPayments = docs;
-                    if (mainContainer.querySelector('#available-quizzes-container')) loadStudentQuizzes();
+            // --- NEW: Listener for user results ---
+            function listenForUserResults() {
+                // Filter results for the current user
+                fetchDocuments(RESULTS_COLLECTION_ID, [Query.equal("userId", currentUser.$id)]).then(docs => {
+                    userResults = docs;
+                    // Re-render the student dashboard if it's the current view
+                    if (mainContainer.querySelector('#available-quizzes-container')) {
+                        loadStudentQuizzes();
+                    }
                 });
             }
+            // --- END NEW ---
 
             // --- STUDENT DASHBOARD LOGIC (Modified to use Appwrite listDocuments) ---
             async function loadStudentQuizzes(quizzesToDisplay = allQuizzes, packagesToDisplay = allPackages, isSearch = false) {
@@ -1981,8 +2007,10 @@
                 
                 // --- 1. Load Completed Quizzes ---
                 if (!isSearch) {
-                    // Filter results for the current user
-                    const completedResults = await fetchDocuments(RESULTS_COLLECTION_ID, [Query.equal("userId", currentUser.$id)]);
+                    // --- MODIFICATION: Use global userResults instead of fetching ---
+                    // const completedResults = await fetchDocuments(RESULTS_COLLECTION_ID, [Query.equal("userId", currentUser.$id)]);
+                    const completedResults = userResults;
+                    // --- END MODIFICATION ---
 
                     if (completedContainer) {
                         completedContainer.innerHTML = '';
@@ -2006,7 +2034,10 @@
                 if(!availableQuizzesContainer || !tabsContainer || !availablePackagesContainer || !dotsContainer) return;
 
                 // Fetch all results just for checking completion status
-                const allCompletedResults = await fetchDocuments(RESULTS_COLLECTION_ID, [Query.equal("userId", currentUser.$id)]);
+                // --- MODIFICATION: Use global userResults instead of fetching ---
+                // const allCompletedResults = await fetchDocuments(RESULTS_COLLECTION_ID, [Query.equal("userId", currentUser.$id)]);
+                const allCompletedResults = userResults;
+                // --- END MODIFICATION ---
                 const completedQuizIds = new Set(allCompletedResults.map(r => r.quizId));
 
                 // --- NEW LOGIC: Determine approved items based on itemId ---
@@ -3272,6 +3303,15 @@
                         [Permission.read(Role.user(currentUser.$id)), Permission.write(Role.user(currentUser.$id))]
                     );
                     resultData.id = docRef.$id;
+                    
+                    // --- FIX: START ---
+                    // Add the new result to the global array immediately
+                    // This ensures that when the user clicks "Back" from the results page,
+                    // the studentDashboard has the most up-to-date data and won't show
+                    // the just-completed quiz as "available".
+                    userResults.push(resultData);
+                    // --- FIX: END ---
+                    
                     displayResults(resultData, 'student');
                 } catch (error) {
                     console.error("Error saving quiz result:", error);
