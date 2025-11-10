@@ -1672,6 +1672,43 @@
             }
             // --- END NEW ---
 
+            // --- NEW: Added missing handlePayment function ---
+            async function handlePayment(itemId, itemType) {
+                let originalPrice = 0;
+                let finalPrice = 0;
+
+                if (itemType === 'quiz') {
+                    const quizData = allQuizzes[itemId];
+                    if (!quizData) {
+                        showToast("خطا: آزمون یافت نشد.", "error");
+                        return;
+                    }
+                    // Check settings for an override price, otherwise use quizData price
+                    originalPrice = quizSettings[itemId]?.price ?? quizData.price;
+                    finalPrice = originalPrice;
+                } else if (itemType === 'package') {
+                    const packageData = allPackages[itemId];
+                    if (!packageData) {
+                        showToast("خطا: پکیج یافت نشد.", "error");
+                        return;
+                    }
+                    originalPrice = packageData.price;
+                    finalPrice = originalPrice;
+                } else {
+                    showToast("خطا: نوع مورد نامشخص است.", "error");
+                    return;
+                }
+
+                // Render the payment instructions view with the correct props
+                renderView('paymentInstructions', {
+                    itemId: itemId,
+                    itemType: itemType,
+                    originalPrice: originalPrice,
+                    finalPrice: finalPrice
+                });
+            }
+            // --- END NEW ---
+
             const handleLogout = async () => {
                 // --- NEW: Unsubscribe from realtime ---
                 unsubscribeRealtime();
