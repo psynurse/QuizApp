@@ -1672,43 +1672,6 @@
             }
             // --- END NEW ---
 
-            // --- NEW: Added missing handlePayment function ---
-            async function handlePayment(itemId, itemType) {
-                let originalPrice = 0;
-                let finalPrice = 0;
-
-                if (itemType === 'quiz') {
-                    const quizData = allQuizzes[itemId];
-                    if (!quizData) {
-                        showToast("خطا: آزمون یافت نشد.", "error");
-                        return;
-                    }
-                    // Check settings for an override price, otherwise use quizData price
-                    originalPrice = quizSettings[itemId]?.price ?? quizData.price;
-                    finalPrice = originalPrice;
-                } else if (itemType === 'package') {
-                    const packageData = allPackages[itemId];
-                    if (!packageData) {
-                        showToast("خطا: پکیج یافت نشد.", "error");
-                        return;
-                    }
-                    originalPrice = packageData.price;
-                    finalPrice = originalPrice;
-                } else {
-                    showToast("خطا: نوع مورد نامشخص است.", "error");
-                    return;
-                }
-
-                // Render the payment instructions view with the correct props
-                renderView('paymentInstructions', {
-                    itemId: itemId,
-                    itemType: itemType,
-                    originalPrice: originalPrice,
-                    finalPrice: finalPrice
-                });
-            }
-            // --- END NEW ---
-
             const handleLogout = async () => {
                 // --- NEW: Unsubscribe from realtime ---
                 unsubscribeRealtime();
@@ -3422,6 +3385,129 @@
                 return `<div class="p-4 border rounded-lg bg-white"><div class="flex justify-between items-center mb-3"><p class="font-bold">سوال ${index + 1}</p><span class="text-xs font-semibold px-2 py-1 rounded-full ${statusClass}">${statusText}</span></div><p class="mb-4">${q.question}</p><div class="space-y-2 text-sm">${q.options.map((opt, i) => `<div class="p-3 border rounded-md ${i === q.correctAnswer ? 'border-green-500 bg-green-50' : (parseInt(userAnswer) === i ? 'border-red-500 bg-red-50' : 'border-gray-200')}" title="پاسخ کاربر: ${parseInt(userAnswer) === i ? 'شما' : ' '}"> ${opt} </div>`).join('')}</div><div class="mt-4 pt-4 border-t text-sm text-purple-800 bg-purple-50 p-3 rounded-md"><p><strong class="font-semibold">پاسخ تشریحی:</strong> ${q.explanation}</p></div></div>`;
             }).join('');
         }
+
+            // --- NEW: PAYMENT HANDLING FUNCTIONS ---
+
+            /**
+             * @name handlePayment
+             * @description این تابع زمانی فراخوانی می‌شود که کاربر روی دکمه پرداخت کلیک می‌کند.
+             * @description اطلاعات لازم را جمع‌آوری کرده و کاربر را به صفحه راهنمای پرداخت هدایت می‌کند.
+             * @param {string} itemId - شناسه آزمون یا پکیج
+             * @param {string} itemType - نوع آیتم ('quiz' یا 'package')
+             */
+            function handlePayment(itemId, itemType) {
+                const item = itemType === 'quiz' ? allQuizzes[itemId] : allPackages[itemId];
+                if (!item) {
+                    console.error("Item not found for payment:", itemId, itemType);
+                    showToast("خطا: مورد مورد نظر یافت نشد.", "error");
+                    return;
+                }
+                
+                // قیمت را ابتدا از تنظیمات آزمون، سپس از خود آزمون، یا از پکیج دریافت می‌کند
+                const originalPrice = itemType === 'quiz' ? (quizSettings[itemId]?.price ?? item.price) : item.price;
+                const finalPrice = originalPrice; // تخفیف در صفحه بعد اعمال می‌شود
+                
+                // رندر کردن صفحه راهنمای پرداخت با اطلاعات لازم
+                renderView('paymentInstructions', { itemId, itemType, originalPrice, finalPrice });
+            }
+
+            /**
+             * @name handlePaymentSubmission
+             * @description این تابع پس از ثبت فرم در صفحه 'paymentSubmission' فراخوانی می‌شود.
+             * @description اسکرین‌شات را آپلود می‌کند و یک سند پرداخت 'pending' ایجاد می‌کند.
+             */
+            async function handlePaymentSubmission(e, itemId, itemType, finalPrice) {
+                e.preventDefault();
+                const submitBtn = document.getElementById('submit-payment-btn');
+                const errorEl = document.getElementById('payment-submit-error');
+                const fileInput = document.getElementById('payment-screenshot');
+                const file = fileInput.files[0];
+
+                if (!file) {
+                    errorEl.textContent = 'لطفاً یک اسکرین‌شات از پرداخت بارگذاری کنید.';
+                    return;
+                }
+                
+                // بررسی حجم فایل (مثلاً حداکثر ۵ مگابایت)
+                if (file.size > 5 * 1024 * 1024) {
+                    errorEl.textContent = 'حجم فایل زیاد است (حداکثر ۵ مگابایت).';
+                    return;
+                }
+
+                toggleButtonLoading(submitBtn, true, 'در حال ثبت');
+                errorEl.textContent = '';
+                let screenshotId = null; // برای پاک‌سازی در صورت خطا
+
+                try {
+                    // ۱. آپلود اسکرین‌شات در Storage
+                    const fileId = ID.unique();
+                    const uploadedFile = await storage.createFile(
+                        SCREENSHOT_BUCKET_ID,
+                        fileId,
+                        file,
+                        // دسترسی‌ها برای فایل: فقط کاربر و ادمین (کاربران لاگین کرده) می‌توانند بخوانند
+                        [
+                            Permission.read(Role.user(currentUser.$id)),
+                            Permission.read(Role.users()) // نقش ادمین (عمومی برای کاربران لاگین کرده)
+                        ]
+                    );
+                    
+                    screenshotId = uploadedFile.$id;
+                    const item = itemType === 'quiz' ? allQuizzes[itemId] : allPackages[itemId];
+
+                    // ۲. ایجاد سند پرداخت
+                    const paymentData = {
+                        userId: currentUser.$id,
+                        userName: userProfile.name,
+                        userEmail: userProfile.email,
+                        itemId: itemId,
+                        itemTitle: item.title,
+                        itemType: itemType,
+                        finalPrice: finalPrice,
+                        screenshotId: screenshotId, // ذخیره شناسه فایل آپلود شده
+                        timestamp: new Date().toISOString(),
+                        status: 'pending' // <-- کلید اصلی: وضعیت در انتظار تایید
+                    };
+
+                    await db.createDocument(
+                        DATABASE_ID,
+                        PAYMENTS_COLLECTION_ID,
+                        ID.unique(),
+                        paymentData,
+                        // دسترسی‌ها برای سند:
+                        [
+                            Permission.read(Role.user(currentUser.$id)),  // کاربر می‌تواند پرداخت خود را ببیند
+                            // به کاربر اجازه نوشتن/آپدیت ندهید
+                            Permission.read(Role.users()) // ادمین (همه کاربران لاگین کرده) می‌تواند آن را بخواند
+                            // ادمین دسترسی نوشتن/حذف را از طریق پنل Appwrite خواهد داشت
+                        ]
+                    );
+
+                    showToast('پرداخت شما ثبت شد. پس از تایید استاد، دسترسی شما باز خواهد شد.', 'success');
+                    
+                    // ۳. بارگذاری مجدد تمام اطلاعات و رفتن به داشبورد
+                    // این کار userPayments را (که اکنون شامل آیتم 'pending' است) مجدداً واکشی می‌کند
+                    // و داشبورد را مجدداً رندر می‌کند، و دکمه "در انتظار تایید" را نشان می‌دهد.
+                    loadUserSession();
+
+                } catch (error) {
+                    console.error("Error submitting payment:", error);
+                    errorEl.textContent = 'خطا در ثبت پرداخت. لطفاً دوباره تلاش کنید.';
+                    
+                    // پاک‌سازی فایل آپلود شده در صورت خطا در ایجاد سند دیتابیس
+                    if (screenshotId) {
+                        try {
+                            await storage.deleteFile(SCREENSHOT_BUCKET_ID, screenshotId);
+                            console.warn("Cleaned up orphaned screenshot file.");
+                        } catch (cleanupError) {
+                            console.error("Failed to clean up orphaned screenshot file:", cleanupError);
+                        }
+                    }
+                } finally {
+                    toggleButtonLoading(submitBtn, false, 'ثبت و انتظار برای تایید');
+                }
+            }
+            // --- END NEW: PAYMENT HANDLING FUNCTIONS ---
 
     // FIX: Removed the polling wrapper
     </script>
