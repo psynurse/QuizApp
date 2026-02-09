@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>پلتفرم آزمون آنلاین پرستاری</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="tailwind.js"></script>
+    <script src="chart.js"></script>
+    <script src="appwrite.js"></script>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -499,7 +500,8 @@
     <script type="module">
         // --- MODIFICATION: Imported Storage ---
         // --- MODIFICATION: Swapped CDN to 'skypack' as a final attempt to resolve loading failures ---
-        import { Client, Account, Databases, Storage, ID, Query, Permission, Role } from 'https://cdn.skypack.dev/appwrite@11.0.0';
+        // دریافت توابع از فایل داخلی appwrite.js که آپلود کردید
+        const { Client, Account, Databases, Storage, ID, Query, Permission, Role } = window.Appwrite;
 
         // console.log("Appwrite SDK imported via ESM (skypack). Initializing application...");
 
